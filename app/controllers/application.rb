@@ -12,7 +12,7 @@ class ApplicationController < ActionController::Base
   # Uncomment this to filter the contents of submitted sensitive data parameters
   # from your application log (in this case, all fields with names like "password"). 
   # filter_parameter_logging :password
-  layout :story
   def index
+    render :file => 'app/views/application/index.html.haml', :layout => "story"
   end
 end

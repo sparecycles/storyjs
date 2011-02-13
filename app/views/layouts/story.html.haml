@@ -1,17 +1,23 @@
+!!!XML
 !!!5
 %html
   %head
     - %w[ jquery-1.4.4 ].each do |js|
-      %script{:src=>"/javascripts/story/#{js}.js", :type=>'text/javascript'}
+      %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
     - %w[ layer story_core story mvc template ].each do |js|
       %script{:src=>"/javascripts/story/#{js}.js", :type=>'text/javascript'}
-    - yield :head
+    = yield :head
     %style{:type=>'text/css'}
-      - yield :style
+      = yield :style
   %body
     #templates{:style=>'display:none'}
-      - yield :templates
-    - yield
+      = yield :templates
+    Story:
+    = yield
   %script{:type=>'text/javascript'}
-    - yield :script
+    :plain
+      _.linkClasses();
+    = yield :script
+    :plain
+      _.linkClasses();
 -# vim: set sw=2 ts=2 expandtab :

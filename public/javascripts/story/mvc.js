@@ -1,4 +1,4 @@
-MVC = _layer.defineClass(function MVC(data) {
+MVC = _layer.defineClass(function(data) {
   this.root = data;
   this.accessed_stack = [];
   this.written = {};
