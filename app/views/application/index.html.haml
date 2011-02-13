@@ -1,0 +1,20 @@
+%p Testing
+#test
+  %div
+    A:
+    %span.a
+  %div
+    B:
+    %span.b
+  %div
+    C:
+    %span.c
+- content_for :script do
+  :plain 
+    var model = new MVC({});
+    $('#test').template(model, {
+      '.a': '.a',
+      '.b': '.b',
+      '.c': '.c',
+    });
+-# vim: set sw=2 ts=2 expandtab :
