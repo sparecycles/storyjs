@@ -133,7 +133,11 @@ Template.scope = function(scope) {
 
 Template.access = function(path) {
   var navigation = Template.navigate(path);
-  if(typeof navigation != 'function') debugger;
+  if(typeof navigation != 'function') {
+    console.warn('could not follow path:', path);
+    debugger;
+    return;
+  }
   return navigation();
 };
 
