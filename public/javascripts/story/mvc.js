@@ -48,7 +48,8 @@ MVC = _layer.defineClass(function(data) {
     this.accessed_stack.push({});
   },
   restore_access_scope: function() {
-    var scope = $keys(this.accessed_stack.pop());
+    var stack = this.accessed_stack.pop();
+    var scope = $keys(stack);
     return scope;
   },
   locked: function(action) {
@@ -89,11 +90,11 @@ MVC = _layer.defineClass(function(data) {
     var id = this.generate_listener_id();
     this.listeners[id] = { listener: listener, reasons: reasons };
     $each.call(this, reasons, function(reason) {
-      $extend(this.reasons, $build(reason, [id, true]));
       var thereason = this.reasons[reason];
-      if(!Object.hasOwnProperty.call(thereason, 'count')) {
-        thereason.count =  0;
-      }
+      if(!thereason) {
+        thereason = this.reasons[reason] = { count: 0 };
+      };
+      thereason[id] = true;
       thereason.count += 1;
     });
     return id;
@@ -135,25 +136,31 @@ MVC = _layer.defineClass(function(data) {
   updated_paths: function() {
     var paths = [];
     function traverse(root, path) {
+
       for(var key in root) {
         var value = root[key], property = path + '.' + key;
-        if(value === true) paths.push(property);
+        if(value === true) { 
+          paths.push(property);
+        }
         else traverse(value, property);
       }
     }
     if(this.written.data) traverse(this.written.data, 'data');
+
     return paths;
   },
   flush: function() {
     var updated_listeners = {};
     $each.call(this, this.updated_paths(), function(reason) {
-      var subpath = [];
-      for(var listener_id in this.reasons[reason] || {}) {
-        $extend(updated_listeners, $build(listener_id, [[reason]]));
+      for(var listener_id in (this.reasons[reason] || {})) {
+        if(listener_id == 'count') continue;
+        if(!Object.hasOwnProperty.call(updated_listeners, listener_id)) {
+          updated_listeners[listener_id] = [];
+        }
+        updated_listeners[listener_id].push(reason);
       }
     });
     $each.call(this, updated_listeners, function(reasons, id) {
-      if(id === 'count') return;
       if(!this.listeners[id]) return;
       var listener = this.listeners[id].listener;
       try {

@@ -48,7 +48,6 @@ Template = _layer.defineClass(function Template(self, action) {
     this.parent = Template.render_context();
     if(this.parent) this.parent.children.push(this);
 
-    var scope;
     try {
       Template.render_context_stack.push(this);
       Template.render_context().mvc.save_access_scope();
@@ -57,8 +56,13 @@ Template = _layer.defineClass(function Template(self, action) {
       console.log('error rendering: %o', ex.stack);
       debugger;
     } finally {
-      scope = Template.render_context().mvc.restore_access_scope();
-      this.mvc_listener_id = Template.render_context().mvc.register(this, scope);
+      var scope = Template.render_context().mvc.restore_access_scope();
+
+      try {
+        this.mvc_listener_id = Template.render_context().mvc.register(this, scope);
+      } catch(ex) {
+        alert(ex.message);
+      }
       Template.render_context_stack.pop();
     }
   }
@@ -141,7 +145,7 @@ Template.access = function(path) {
   return navigation();
 };
 
-Template.navigate = new function(primitive) { return function(path) {
+Template.navigate = function(path) {
   var context = Template.context();
 
   while(typeof path === 'string' && path.slice(0,3) == '...') {
@@ -177,27 +181,31 @@ Template.navigate = new function(primitive) { return function(path) {
     });
   });
 
-  return (function $eval() {
-    var base = primitive(this[0], context);
-    $each(this.slice(1), function(part) {
+  return $eval(tree);
+
+  function primitive(path, context) {
+    if(path.slice(0,1) == '.') {
+      return context.data(path.slice(1));
+    } else if(path.slice(0,1) == '=') {
+      return MVC.constant(path.slice(1));
+    } else {
+      return context.scope[path];
+    }
+  };
+
+  function $eval(tree) {
+    var base = primitive(tree[0], context);
+    
+    $each(tree.slice(1), function(part) {
       if(part instanceof Array) {
-        base = base($eval.call(part)());
+        base = base($eval(part)());
       } else {
-        console.log('base = base("' + part + '")');
         base = base(part);
       }
     });
     return base;
-  }).call(tree);
-} }(function primitive(path, context) {
-  if(path[0] == '.') {
-    return context.data(path.slice(1));
-  } else if(path[0] == '=') {
-    return MVC.constant(path.slice(1));
-  } else {
-    return context.scope[path];
   }
-});
+};
 
 Template.coalesce = function() {
   return (function(args) { 
@@ -324,12 +332,12 @@ Template.render = function() {
   }
 
   $each.call(this, Template.context().map, function(value, key) { Template(this, function() {
-    if(key[0] == '$') return;
+    if(key.slice(0,1) == '$') return;
     var map_index = 0;
     if(Number(value) == value) value = Number(value);
     var context = Template.context();
     while(typeof value == 'string') {
-      if(value[0] == '%') {
+      if(value.slice(0,1) == '%') {
         var content_selector = $();
         for( ; context; context = context.parent) {
           var map = context.map;
@@ -370,13 +378,13 @@ Template.render = function() {
         var split = key.split(/@/);
         var selector = split[0] == '' ? this : $(split[0], this);
         var attr = split[1];
-        if(attr.substr(0,2) == 'on') {
+        if(attr.slice(0,2) == 'on') {
           if(typeof value === 'function') {
             Template.opt(this, function() {
               var param = {
                 data: Template.context().data,
                 map: Template.context().map,
-                scope: Template.scope(),
+                scope: Template.scope()
               };
               selector.bind(attr.slice(2), function() { 
                 return value.apply(this, __args().concat([param])); 

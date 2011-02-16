@@ -1,5 +1,5 @@
 - content_for :head do
-  %script{:src=>'game/bezier/b.js',:type=>'text/javascript'}
+  -#%script{:src=>'game/bezier/b.js',:type=>'text/javascript'}
 - print 'Rendering ....'
 %p Testing
 #test
@@ -21,13 +21,14 @@
     var model = new MVC({ bezier: [[0,0],[0,1],[1,1],[1,0],[.5,.5]] });
     $('#test').template(model, {
       '.a': '.a',
+      '.b': '.b',
       '.bezier-control': function() {
         var data = Template.navigate('.bezier');
         $each.call(this, data(), function(point, index) {
           var control = $('<div/>').appendTo($(this)).css({
             width: '20px', height: '20px', position: 'absolute',
             top: (point[1]*100) + 'px', left: (point[0]*100) + 'px',
-            background: 'red', 'border-radius': '10px',
+            background: 'red', 'border-radius': '10px'
           });
           Template.inserted(control);
           control.mousedown(function(ev) {
@@ -56,16 +57,20 @@
         for(var i = 0; i < length; i++) {
           points.push([data(i)(0)(), data(i)(1)()]);
         }
-        var bezier = new Bezier($(this), 500, points);
-        Template.teardown(function() { bezier.stop(); });
+        //var bezier = new Bezier($(this), 500, points);
+        //Template.teardown(function() { bezier.stop(); });
       }
     });
-    model.data('a', function() { 
-      Template.inserted($('<button>add point</button>')
-        .click(function() { 
-          model.data('bezier', 
-            model.data('bezier')().concat([[0,0]])); }))
-        .appendTo($(this)
+    model.data('b', 'hello IE');
+    if(true) model.data('a', function() { 
+      Template.inserted(
+        $('<button>add point</button>')
+        .click(function() {
+          var bezier = model.data('bezier')().slice();
+          bezier = bezier.concat([[0,0]]);
+          model.data('bezier', bezier);
+        })
+        .appendTo($(this))
       ); 
     });
 -# vim: set sw=2 ts=2 expandtab :

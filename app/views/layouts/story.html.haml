@@ -2,10 +2,15 @@
 !!!5
 %html
   %head
-    - %w[ jquery-1.4.4 ].each do |js|
-      %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
+    -#%script{:type=>'text/javascript'}
+    - %w[ jquery-1.4.4 json2 ].each do |js|
+      -#%script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
+      :javascript
+        #{File.new("public/javascripts/#{js}.js").read}
     - %w[ layer story_core story mvc template ].each do |js|
-      %script{:src=>"/javascripts/story/#{js}.js", :type=>'text/javascript'}
+      -#%script{:src=>"/javascripts/story/#{js}.js", :type=>'text/javascript'}
+      :javascript
+        #{File.new("public/javascripts/story/#{js}.js").read}
     = yield :head
     %style{:type=>'text/css'}
       = yield :style
@@ -16,8 +21,8 @@
     = yield
   %script{:type=>'text/javascript'}
     :plain
-      _.linkClasses();
+      _layer.linkClasses();
     = yield :script
     :plain
-      _.linkClasses();
+      _layer.linkClasses();
 -# vim: set sw=2 ts=2 expandtab :

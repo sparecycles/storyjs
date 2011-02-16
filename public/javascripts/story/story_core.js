@@ -1,4 +1,4 @@
-Story = _.defineClass(function Story() { 
+Story = _layer.defineClass(function Story() { 
   this.story = Story.Build(Story.Group, __args());
 }, null, {
   tell: function(scope) { 
@@ -172,7 +172,7 @@ $overlay(Story.Options, {
     if(options.name) story_node.name = options.name;
 
     return story_node;
-  },
+  }
 });
 
 Story.or = function() {

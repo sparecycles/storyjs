@@ -2,13 +2,13 @@ Story.Node = _layer.defineClass(Story.Node, null, {
   update: function() { return false; },
   setup: function() { },
   teardown: function() { },
-  type: 'node',
+  type: 'node'
 });
 
 Story.DefineNode('Action', function(node) {
   if(typeof node === 'function') {
     this.update = node;
-  } else if(Object(node) instanceof String && node.trimLeft()[0] == '{') {
+  } else if(Object(node) instanceof String && node.trimLeft().slice(0,1) == '{') {
     this.update = new Function(node);
   } else {
     var node_functions = ['setup', 'teardown', 'update', 'handle'];

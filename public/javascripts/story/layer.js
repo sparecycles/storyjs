@@ -1,5 +1,6 @@
+var TESTING = true;
 // Just in case
-if(Object.create === undefined) {
+if(Object.create === undefined || TESTING) {
   Object.create = function(proto) {
     function _() {};
     _.prototype = proto;
@@ -7,25 +8,25 @@ if(Object.create === undefined) {
   }
 }
 
-if(Object.getPrototypeOf === undefined) {
+if(Object.getPrototypeOf === undefined || TESTING) {
   Object.getPrototypeOf = function(obj) {
     return obj.constructor.prototype;
   }
 }
 
-if(Object.freeze === undefined) {
+if(Object.freeze === undefined || TESTING) {
   Object.freeze = function(obj) {
     return obj;
   }
 }
 
-if(Object.isFrozen === undefined) {
+if(Object.isFrozen === undefined || TESTING) {
   Object.isFrozen = function(obj) {
     return false;
   }
 }
 
-if(Object.keys === undefined) {
+if(Object.keys === undefined || TESTING) {
   Object.keys = function(obj) {
     var result = [];
     for(var k in obj) if(Object.prototype.hasOwnProperty.call(obj, k)) {
@@ -35,9 +36,33 @@ if(Object.keys === undefined) {
   }
 }
 
-
-if(Object.getOwnPropertyNames === undefined) {
+if(Object.getOwnPropertyNames === undefined || TESTING) {
   Object.getOwnPropertyNames === Object.keys;
+}
+
+if(!Function.prototype.bind || TESTING) {
+  Function.prototype.bind = function(self) {
+    var fn = this;
+    var args = __args();
+    return function() { 
+      return fn.apply(self || null, args.concat(__args())); 
+    };
+  };
+}
+
+if(!Object.hasOwnProperty.call(window, 'console')) {
+  console = {
+    log: function() {},
+    warn: function() {},
+    error: function() {},
+    info: function() {},
+    assert: function(t, msg) { 
+      if(!t) { 
+        alert("assertion failed: " + msg); 
+        throw new Error('assert failed'); 
+      } 
+    }
+  };
 }
 
 // Function: __args
@@ -306,8 +331,7 @@ function $profile(name, fn) {
 }
 
 
-
-_layer = _ = function(thing, key, value) {
+_layer = function(thing, key, value) {
   if(key instanceof Array) {
     for(var i = 0; i < key.length - 1; i++) {
       thing = _(thing, key[i]);
@@ -323,6 +347,7 @@ _layer = _ = function(thing, key, value) {
 };
 
 new function() {
+  var _ = _layer;
   function layer(options) {
     var get = options && options.get || layer.get;
     var set = options && options.set || layer.set;
@@ -353,15 +378,15 @@ new function() {
   var super_methods = [];
   var global = (function() { return this; })();
 
-  _.super = function() { 
+  _.super_ = function() { 
     return super_methods.slice(-1)[0] || layer.noop; 
   }
 
-  layer.get = function(property) {
+  layer['get'] = function(property) {
     return this[property];
   };
 
-  layer.set = function(property, value) {
+  layer['set'] = function(property, value) {
     return this[property] = value;
   };
 
@@ -425,7 +450,7 @@ new function() {
     while(klasses.length) {
       var to_link = klasses;
       klasses = [];
-      to_link.forEach(function(klass) {
+      $each(to_link, function(klass) {
         if(klass._$inherit) klass._$inherit();
       });
     }
