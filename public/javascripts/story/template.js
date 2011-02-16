@@ -155,6 +155,10 @@ Template.navigate = new function(primitive) { return function(path) {
     return path.call(context.render_context.self);
   }
 
+  if(path === '.') {
+    return Template.context().data;
+  }
+
   // "a[b[c]][d[e].f].g].h" -->
   // ['a', [ 'b', ['c'], [ 'd', [ 'e' ], '.f' ], '.g' ], '.h' ]
   // 

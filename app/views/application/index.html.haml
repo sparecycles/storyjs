@@ -1,3 +1,5 @@
+- content_for :head do
+  %script{:src=>'game/bezier/b.js',:type=>'text/javascript'}
 - print 'Rendering ....'
 %p Testing
 #test
@@ -10,13 +12,60 @@
   %div
     C:
     %span.c
+  %div.bezier-control{:style=>'width:100px; height:100px; border: 3px solid black; position:relative'}
+  %div
+    Bezier:
+    %canvas.bezier
 - content_for :script do
   :plain 
-    var model = new MVC({});
+    var model = new MVC({ bezier: [[0,0],[0,1],[1,1],[1,0],[.5,.5]] });
     $('#test').template(model, {
       '.a': '.a',
-      '.b': '.b',
-      '.c': '.c',
+      '.bezier-control': function() {
+        var data = Template.navigate('.bezier');
+        $each.call(this, data(), function(point, index) {
+          var control = $('<div/>').appendTo($(this)).css({
+            width: '20px', height: '20px', position: 'absolute',
+            top: (point[1]*100) + 'px', left: (point[0]*100) + 'px',
+            background: 'red', 'border-radius': '10px',
+          });
+          Template.inserted(control);
+          control.mousedown(function(ev) {
+            var base = [ev.screenX - point[0]*100, ev.screenY - point[1]*100];
+            var onmousemove = function(ev) {
+              var delta = [ev.screenX - base[0], ev.screenY - base[1]];
+              console.log('point[0]', point[0], '-->', delta[0]/100);
+              console.log('point[1]', point[1], '-->', delta[1]/100);
+              data(index)(0, delta[0]/100);
+              data(index)(1, delta[1]/100);
+              control.css({
+                top: (point[1]*100) + 'px',
+                left: (point[0]*100) + 'px'
+              });
+            }
+            $('body').mousemove(onmousemove).one('mouseup', function() {
+              $(this).unbind('mousemove', onmousemove);
+            });
+          });
+        });
+      },
+      '.bezier' : function() {
+        var data = Template.navigate('.bezier');
+        var length = data('length')();
+        var points = [];
+        for(var i = 0; i < length; i++) {
+          points.push([data(i)(0)(), data(i)(1)()]);
+        }
+        var bezier = new Bezier($(this), 500, points);
+        Template.teardown(function() { bezier.stop(); });
+      }
     });
-- print 'Rendering Done' 
+    model.data('a', function() { 
+      Template.inserted($('<button>add point</button>')
+        .click(function() { 
+          model.data('bezier', 
+            model.data('bezier')().concat([[0,0]])); }))
+        .appendTo($(this)
+      ); 
+    });
 -# vim: set sw=2 ts=2 expandtab :
