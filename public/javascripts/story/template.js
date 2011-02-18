@@ -63,10 +63,15 @@ Template = _layer.defineClass(function Template(self, action) {
       } catch(ex) {
         alert(ex.message);
       }
-      Template.render_context_stack.pop();
+
+      return Template.pop_render_context();
     }
   }
 });
+
+Template.pop_render_context = function() {
+  Template.render_context_stack.pop();
+}
 
 Template.RootRenderContext = function(mvc, map) {
   var self = Object.create(Template.prototype);
@@ -91,8 +96,9 @@ Template.opt = function(self, action) {
 };
 
 Template.inserted = function(node) {
-  Template.render_context().inserted.push(node);
-  Template.render_context().nodes.push(node);
+  var rc = Template.render_context();
+  rc.inserted.push(node);
+  rc.nodes.push(node);
   return node;
 };
 
@@ -189,7 +195,12 @@ Template.navigate = function(path) {
     } else if(path.slice(0,1) == '=') {
       return MVC.constant(path.slice(1));
     } else {
-      return context.scope[path];
+      //return context.scope[path];
+      var first_part = path.split('.', 1)[0];
+      var rest = path.slice(first_part.length + 1);
+      var navigation = context.scope[first_part];
+      if(navigation && rest.length) navigation = navigation(rest);
+      return navigation;
     }
   };
 
@@ -230,8 +241,10 @@ Template.render = function() {
     Template.opt(this, function() {
       var list = Template.navigate(_each[key]);
       if(typeof list != 'function' || typeof list('length') != 'function') {
-        debugger;
+        console.log('Invalid list found in model for', _each[key]);
+        debugger; // and do it again so we can step through it!
         list = Template.navigate(_each[key]);
+        debugger;
       }
       if(list) $range.call(this, 0, list('length')(), function(index) {
         var clone = Template.inserted(this.clone().insertBefore(this));
@@ -272,8 +285,11 @@ Template.render = function() {
       if($let instanceof Array) {
         $each.call(this, $let, evaluate_let_bindings);
       } else {
-        $each($let, function(value, key) {
-          Template.scope($build(key, [Template.navigate(value)]));
+        $each.call(this, $let, function(value, key) {
+          switch(value) {
+          case '#self': return Template.scope($build(key, [MVC.constant(this)]));
+          default: return Template.scope($build(key, [Template.navigate(value)]));
+          }
         });
       }
     }).call(this, $let);
@@ -310,6 +326,9 @@ Template.render = function() {
     Template.opt(this, function() {
       var node = template_fn().insertBefore(this);
       Template.inserted(node);
+      if(Template.context().map.$setup) {
+        Template.context().map.$setup.call(node);
+      }
     });
     Template.remove(this, 'template(' + $template + ')');
     return;
@@ -374,8 +393,9 @@ Template.render = function() {
     if(!value && typeof value !== 'number') return;
 
     Template.opt(this, function() {
-      if(/@/.test(key)) {
-        var split = key.split(/@/);
+      var at_index = key.indexOf('@');
+      if(at_index != -1) {
+        var split = [key.slice(0,at_index), key.slice(at_index+1)];
         var selector = split[0] == '' ? this : $(split[0], this);
         var attr = split[1];
         if(attr.slice(0,2) == 'on') {
@@ -408,39 +428,49 @@ Template.render = function() {
 
           if(!$is_primitive(style)) {
             var result = [];
-            $list(style, function(value, key) {
-              value = Template.access(value);
-              if(!value) throw 'reject';
-              value = $map(String(value).trim().split(/\s+/), function(part) {
-                if(String(Number(part)) === part) {
-                  return String(Number(part)) + ($until([
-                    [/^left$|^right$|^top$|^bottom$/, 'px'],
-                    [/^margin|^padding|^border/, 'px'],
-                    [/^width$|^height$/, 'px'],
-                    [/^min-|^max-/, 'px'],
-                    [/^line-height$|^font-size$|^text-indent$/, 'pt'],
-                  ], function(ending) {
-                    if(ending[0].test(key)) {
-                      return ending[1];
+            function enumerate(style) {
+              if(style instanceof Array) {
+                $each(style, enumerate);
+              } else {
+                $each(style, function(value, key) {
+                  console.log(key, '=', value);
+                  value = Template.access(value);
+                  if(!value) throw 'reject';
+                  var values = String(value).replace(/^\s+/, '').replace(/\s*$/, '').split(/\s+/);
+                  value = $map(values, function(part) {
+                    if(String(Number(part)) === part) {
+                      return String(Number(part)) + ($until([
+                        [/^left$|^right$|^top$|^bottom$/, 'px'],
+                        [/^margin|^padding|^border/, 'px'],
+                        [/^width$|^height$/, 'px'],
+                        [/^min-|^max-/, 'px'],
+                        [/^line-height$|^font-size$|^text-indent$/, 'pt'],
+                      ], function(ending) {
+                        if(ending[0].test(key)) {
+                          return ending[1];
+                        }
+                      }) || '');
                     }
-                  }) || '');
-                }
-                return part;
-              }).join(' ');
-              // there's plenty of special handling we could do here to get maximum cross-compatibility 
-              // between browsers, for now, just stick -moz- (firefox), -webkit- (chrome/safari), and -o- (opera) prefixes on
-              // the styles so non-up-to-date browsers will see the new (now standardized) style attributes.
-              if(/^box-shadow|^border-.*radius|^transform|^transition/.test(key)) {
-                result.push('-moz-' + key + ': ' + value);
-                result.push('-webkit-' + key + ': ' + value);
-                result.push('-o-' + key + ': ' + value);
+                    return part;
+                  }).join(' ');
+                  // there's plenty of special handling we could do here to get maximum cross-compatibility 
+                  // between browsers, for now, just stick -moz- (firefox), -webkit- (chrome/safari), and -o- (opera) prefixes on
+                  // the styles so non-up-to-date browsers will see the new (now standardized) style attributes.
+                  if(/^box-shadow|^border-.*radius|^transform|^transition/.test(key)) {
+                    result.push('-moz-' + key + ': ' + value);
+                    result.push('-webkit-' + key + ': ' + value);
+                    result.push('-o-' + key + ': ' + value);
+                  }
+                  result.push(key + ': ' + value);
+                });
               }
-              result.push(key + ': ' + value);
-            });
+            };
+            enumerate(style);
             style = result.join(';\n');
           }
-          var base = (selector.attr('style') || '').trim();
-          selector.attr(key.slice(1), base ? base + ';' + style : style);
+          var base = (selector.attr('style') || '');
+          selector.attr(attr, base ? base + ';' + style : style);
+          Template.teardown(function() { selector.attr(attr, base); });
           break;
         default:
           selector.attr(key.slice(1), Template.access(value));
@@ -449,17 +479,16 @@ Template.render = function() {
       }
       if(typeof value === 'function') {
         Template.opt(this, function() {
-          var selector = key == '.' ? this : this.find(key);
+          var selector = (key == '.' ? this : this.find(key));
           var result = value.call(selector);
-          if(result) selector.text(result());
+          if(result) selector.text(result);
         });
       } else if(typeof value === 'string') {
         Template.opt(this, function() {
-          if(key === '.') this.text(Template.access(value));
-          else this.find(key).text(Template.access(value));
+          (key == '.' ? this : this.find(key)).text(Template.access(value));
         });
       } else {
-        this.find(key).each(function() {
+        (key == '.' ? this : this.find(key)).each(function() {
           Template(this, function() {
             Template.context().map = Object.create(value);
             Template.render.call($(this));
@@ -474,6 +503,10 @@ Template.definedTemplates = {};
 
 jQuery.fn.defineTemplate = function(name, map) {
   var src = this.detach();
+  if(this.length != 1) {
+    console.log('Bad defineTemplate("' + name + '"), selector.length != 1');
+    debugger;
+  }
   src.attr('id', null); // clear id attribute, probably the selector.
   Template.definedTemplates[name] = function() {
     var clone = src.clone(),
@@ -489,7 +522,7 @@ jQuery.fn.defineTemplate = function(name, map) {
 
 jQuery.fn.template = function(mvc, map) {
   Template.render_context_stack.push(
-    new Template.RootRenderContext(mvc, $deepfreeze(map || {}))
+    new Template.RootRenderContext(mvc, $deepfreeze(map || {}), this)
   );
   try {
     Template(this, function() {
@@ -498,7 +531,7 @@ jQuery.fn.template = function(mvc, map) {
       });
     });
   } finally {
-    return Template.render_context_stack.pop();
+    return Template.pop_render_context();
   }
 }
 

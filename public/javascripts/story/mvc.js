@@ -187,7 +187,7 @@ MVC = _layer.defineClass(function(data) {
 });
 
 MVC.constant = function(value) {
-  return new MVC.wrapper({read:_.layer.noop, write:_.layer.noop}, value, '!');
+  return new MVC.wrapper({read:_layer.layer.noop, write:_layer.layer.noop}, value, '!');
 }
 
 MVC.wrapper = _layer.defineClass(function MVC_wrapper(mvc, value, path) {

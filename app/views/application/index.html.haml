@@ -1,8 +1,121 @@
+- content_for :templates do
+  .dialog
+    .frame
+      .content
+      .button-frame
+        .buttons
+          %button.button .label
+
+- content_for :style do
+  :plain
+    .dialog {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+    }
+    .dialog .frame { 
+      background: #999;
+      padding: 3px;
+      border-radius: 10px;
+      border: 5px solid gray;
+      margin: 3px;
+      position: relative;
+    }
+    .dialog .button-frame {
+      border-top: 5px solid gray;
+      bottom: 0px;
+      width: 100%;
+      left:-3px;
+      margin-left: 3px;
+      position: absolute;
+      text-align: right;
+    }
+    .dialog .button-frame .buttons {
+      -webkit-box-shadow: 2px 2px 3px #333 inset;
+      border-bottom-left-radius: 30px 10px;
+      margin: 0 -5px -5px -5px;
+      border: 5px solid gray;
+      border-top: none;
+      background: #999;
+      padding: 10px;
+    }
+
+- content_for :script do
+  :plain
+    $('#templates .dialog').defineTemplate('dialog-template', {
+      $let : { dialog: '#self', type: '.type', handler : '.handler' }, 
+      '.frame' : { $let : {
+          'radius' : Template.coalesce('.radius', '=20px')
+        }, 
+        '@style' : [{ 
+          'border-radius' : 'radius'
+        }, { 
+          width: Template.coalesce('.width', '=500'), 
+          height: Template.coalesce('.height', '=200'),
+          padding: Template.coalesce('.padding', 'radius'),
+          'box-shadow' : '=3px 3px 5px #333, 2px 2px 3px #333 inset'
+        }],
+        '.buttons@style' : [{ 
+          'border-bottom-left-radius' : 'radius',
+          'border-bottom-right-radius' : 'radius',
+          'box-shadow' : '=3px 3px 5px #333, 2px 2px 3px #333 inset'
+        }, {
+          'border-top-left-radius' : '=0',
+          'border-top-right-radius' : '=0'
+        }]
+      },
+      '.content' : { 
+        $template : 'type',
+        $in : '.content', 
+        '...handler' : 'handler'
+      },
+      '.button' : { $each : { button : '.buttons' },
+        $in : 'button',
+        '@text': '.label',
+        $setup : function() {
+          $(this).click(Template.access('handler').bind(
+            Template.access('dialog'),
+            Template.access('.action')
+          )); 
+        }
+      }
+    });
+
+    Dialog = _layer.defineClass(function(type, content, buttons, handler) {
+      var self = this;
+      this.model = new MVC({type: type, content: content, buttons: buttons, handler: handler});
+      this.instance = $("<div/>").appendTo($('body')).template(this.model, {
+        '.' : { 
+          $template: '=dialog-template',
+          $setup: function() {
+            $(this).data('dialog', self);
+            $(this).data('content', this.model('content'));
+          }
+        }
+      });
+    }, null, {
+    });
+    _layer.linkClasses();
+
+- content_for :templates do
+  .dialog-content.test-dialog
+    Testing
+    .caption{:style=>'background: red'}
+
+- content_for :script do
+  :plain
+    $('.dialog-content.test-dialog').defineTemplate('test-dialog', { 
+      '.caption' : '.caption' 
+    });
+
 - content_for :head do
-  -#%script{:src=>'game/bezier/b.js',:type=>'text/javascript'}
+  %script{:src=>'game/bezier/b.js',:type=>'text/javascript'}
 - print 'Rendering ....'
 %p Testing
 #test
+  %div
+    Action:
+    %span.action
   %div
     A:
     %span.a
@@ -18,57 +131,32 @@
     %canvas.bezier
 - content_for :script do
   :plain 
-    var model = new MVC({ bezier: [[0,0],[0,1],[1,1],[1,0],[.5,.5]] });
+    //new Dialog('test-dialog', {caption: 'world'}, function() {});
+    //new Dialog('test-dialog', {caption: 'fffft'}, function() {});
+    var model = new MVC({});
     $('#test').template(model, {
       '.a': '.a',
       '.b': '.b',
-      '.bezier-control': function() {
-        var data = Template.navigate('.bezier');
-        $each.call(this, data(), function(point, index) {
-          var control = $('<div/>').appendTo($(this)).css({
-            width: '20px', height: '20px', position: 'absolute',
-            top: (point[1]*100) + 'px', left: (point[0]*100) + 'px',
-            background: 'red', 'border-radius': '10px'
-          });
-          Template.inserted(control);
-          control.mousedown(function(ev) {
-            var base = [ev.screenX - point[0]*100, ev.screenY - point[1]*100];
-            var onmousemove = function(ev) {
-              var delta = [ev.screenX - base[0], ev.screenY - base[1]];
-              console.log('point[0]', point[0], '-->', delta[0]/100);
-              console.log('point[1]', point[1], '-->', delta[1]/100);
-              data(index)(0, delta[0]/100);
-              data(index)(1, delta[1]/100);
-              control.css({
-                top: (point[1]*100) + 'px',
-                left: (point[0]*100) + 'px'
-              });
-            }
-            $('body').mousemove(onmousemove).one('mouseup', function() {
-              $(this).unbind('mousemove', onmousemove);
-            });
-          });
-        });
-      },
-      '.bezier' : function() {
-        var data = Template.navigate('.bezier');
-        var length = data('length')();
-        var points = [];
-        for(var i = 0; i < length; i++) {
-          points.push([data(i)(0)(), data(i)(1)()]);
-        }
-        //var bezier = new Bezier($(this), 500, points);
-        //Template.teardown(function() { bezier.stop(); });
-      }
+      '.action': '.action'
     });
     model.data('b', 'hello IE');
     if(true) model.data('a', function() { 
       Template.inserted(
         $('<button>add point</button>')
         .click(function() {
-          var bezier = model.data('bezier')().slice();
-          bezier = bezier.concat([[0,0]]);
-          model.data('bezier', bezier);
+          var dialog = new Dialog('test-dialog', {caption: 'hello'}, [
+            {label:'ok', action:'ok'},
+            {label:'cancel', action:'cancel'}
+          ], function(action) {
+            switch(action) {
+            case 'ok':
+              dialog.model.data('content.caption', 'bye');
+              break;
+            case 'cancel':
+              $(this).remove();
+              break;
+            }
+          });
         })
         .appendTo($(this))
       ); 
