@@ -99,7 +99,7 @@ $overlay(Story, {
     Story[name] = _layer.defineClass(Story[name], Story.Node, prototype);
   },
   wait: function() {
-    return $not($and.apply(null, $map(__args(), function(arg) { 
+    return Story.not(Story.and.apply(null, $map(__args(), function(arg) { 
       return Story.get(arg);
     }))); 
   },
@@ -187,7 +187,7 @@ Story.or = function() {
   } 
 } 
 
-function $and() {
+Story.and = function() {
   var terms = __args();
   return function() { 
     var result = true;

@@ -247,7 +247,8 @@ Template.render = function() {
         debugger;
       }
       if(list) $range.call(this, 0, list('length')(), function(index) {
-        var clone = Template.inserted(this.clone().insertBefore(this));
+        var $this = $(this);
+        var clone = Template.inserted($this.clone().insertBefore($this));
         Template(this, function() {
           Template.scope($build(key, [list(index)], key + '-index', [MVC.constant(index)]));
           Template.render.call(clone);
@@ -267,9 +268,10 @@ Template.render = function() {
       var list = Template.navigate($for);
       if(list) $range.call(this, 0, list('length')(), function(index) {
         Template(this, function() {
+          var $this = $(this);
           Template.context().data = list(index)();
           Template.render.call(
-            Template.inserted(this.clone().insertBefore(this))
+            Template.inserted($this.clone().insertBefore($this))
           );
         });
       });
@@ -366,7 +368,7 @@ Template.render = function() {
               $partial = map.$partial;
 
           $each.call($partial, contents_for, function(value, key) {
-            var content = this.find(key);
+            var content = $(this).find(key);
             content_selector = content_selector.add(
               content.clone().data('template', {
                 map: value, 
@@ -376,7 +378,7 @@ Template.render = function() {
             Template.remove(content, 'content_for ' + key);
           });
         }
-        var target = this.find(key);
+        var target = $(this).find(key);
         if(content_selector.length > 0 && target.length > 0) {
           Template.inserted(content_selector.appendTo(target).each(function() {
             Template(this, function() {
@@ -478,16 +480,16 @@ Template.render = function() {
       }
       if(typeof value === 'function') {
         Template.opt(this, function() {
-          var selector = (key == '.' ? this : this.find(key));
+          var selector = (key == '.' ? $(this) : $(this).find(key));
           var result = value.call(selector);
           if(result) selector.text(result);
         });
       } else if(typeof value === 'string') {
         Template.opt(this, function() {
-          (key == '.' ? this : this.find(key)).text(Template.access(value));
+          (key == '.' ? $(this) : $(this).find(key)).text(Template.access(value));
         });
       } else {
-        (key == '.' ? this : this.find(key)).each(function() {
+        (key == '.' ? $(this) : $(this).find(key)).each(function() {
           Template(this, function() {
             Template.context().map = Object.create(value);
             Template.render.call($(this));
@@ -510,7 +512,7 @@ jQuery.fn.defineTemplate = function(name, map) {
   Template.definedTemplates[name] = function() {
     var clone = src.clone(),
         parent = Object.create(Template.context());
-    Template(this, function() {
+    Template(this[0], function() {
       Template.context().parent = parent;
       Template.context().map = Object.create(map);
       Template.render.call(clone);
@@ -520,14 +522,22 @@ jQuery.fn.defineTemplate = function(name, map) {
 };
 
 jQuery.fn.template = function(mvc, map) {
+  if(this.length != 1) {
+    console.warn('template rendering on a non-singular node!');
+    debugger;
+  }
+  this.each(function() {
+    jQuery.template(this, mvc, map);
+  });
+}
+
+jQuery.template = function(node, mvc, map) {
   Template.render_context_stack.push(
-    new Template.RootRenderContext(mvc, $deepfreeze(map || {}), this)
+    new Template.RootRenderContext(mvc, $deepfreeze(map || {}))
   );
   try {
-    Template(this, function() {
-      this.each(function() {
-        Template.render.call($(this));
-      });
+    Template(node, function() {
+      Template.render.call(this);
     });
   } finally {
     return Template.pop_render_context();

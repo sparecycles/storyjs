@@ -84,16 +84,20 @@
     Dialog = _layer.defineClass(function(type, content, buttons, handler) {
       var self = this;
       this.model = new MVC({type: type, content: content, buttons: buttons, handler: handler});
-      this.instance = $("<div/>").appendTo($('body')).template(this.model, {
+      $("<div/>").appendTo($('body')).template(this.model, {
         '.' : { 
           $template: '=dialog-template',
           $setup: function() {
+            self.instance = this;
             $(this).data('dialog', self);
             $(this).data('content', self.model.data('content'));
           }
         }
       });
     }, null, {
+      close: function() {
+        $(this.instance).remove();
+      }
     });
     _layer.linkClasses();
 
@@ -140,7 +144,18 @@
       '.action': '.action'
     });
     model.data('b', 'hello IE');
+    Simple = Story(
+      { setup: function() { 
+        this.scope.buttons.each(function() {
+          $(this).click(Story.set('done', true));
+        });
+      } },
+      [ Story.wait('done'), function() { this.scope.dialog.close(); } ]
+    );
+
+
     if(true) model.data('a', function() { 
+      
       Template.inserted(
         $('<button>add point</button>')
         .click(function() {
