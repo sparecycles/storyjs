@@ -89,7 +89,7 @@
           $template: '=dialog-template',
           $setup: function() {
             $(this).data('dialog', self);
-            $(this).data('content', this.model('content'));
+            $(this).data('content', self.model.data('content'));
           }
         }
       });

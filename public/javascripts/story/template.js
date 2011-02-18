@@ -53,7 +53,7 @@ Template = _layer.defineClass(function Template(self, action) {
       Template.render_context().mvc.save_access_scope();
       return this.action();
     } catch(ex) {
-      console.log('error rendering: %o', ex.stack);
+      console.warn('error rendering: %o', ex.stack);
       debugger;
     } finally {
       var scope = Template.render_context().mvc.restore_access_scope();
@@ -241,7 +241,7 @@ Template.render = function() {
     Template.opt(this, function() {
       var list = Template.navigate(_each[key]);
       if(typeof list != 'function' || typeof list('length') != 'function') {
-        console.log('Invalid list found in model for', _each[key]);
+        console.warn('Invalid list found in model for', _each[key]);
         debugger; // and do it again so we can step through it!
         list = Template.navigate(_each[key]);
         debugger;
@@ -433,7 +433,6 @@ Template.render = function() {
                 $each(style, enumerate);
               } else {
                 $each(style, function(value, key) {
-                  console.log(key, '=', value);
                   value = Template.access(value);
                   if(!value) throw 'reject';
                   var values = String(value).replace(/^\s+/, '').replace(/\s*$/, '').split(/\s+/);
@@ -504,7 +503,7 @@ Template.definedTemplates = {};
 jQuery.fn.defineTemplate = function(name, map) {
   var src = this.detach();
   if(this.length != 1) {
-    console.log('Bad defineTemplate("' + name + '"), selector.length != 1');
+    console.warn('Bad defineTemplate("' + name + '"), selector.length != 1');
     debugger;
   }
   src.attr('id', null); // clear id attribute, probably the selector.
