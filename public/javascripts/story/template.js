@@ -78,6 +78,9 @@ Template.RootRenderContext = function(mvc, map) {
   self.children = [];
   self.mvc = mvc;
   self.nodes = [];
+  self.destructors = [];
+  self.placeholders = [];
+  self.inserted = [];
   self.context = {
     data: mvc.data,
     map: map,
@@ -521,20 +524,43 @@ jQuery.fn.defineTemplate = function(name, map) {
   }
 };
 
+jQuery.fn.clearTemplate = function() {
+  return this.each(function() {
+    jQuery.clearTemplate(this);
+  });
+}
+
 jQuery.fn.template = function(mvc, map) {
+   if(arguments.length == 1 && arguments[0] === false) {
+     return this.clearTemplate();
+   }
+
   if(this.length != 1) {
     console.warn('template rendering on a non-singular node!');
     debugger;
   }
-  this.each(function() {
+  return this.each(function() {
     jQuery.template(this, mvc, map);
   });
 }
 
+jQuery.clearTemplate = function(elem) {
+  var data = $(elem).data();
+  var template_context = data.template_context;
+  if(template_context) {
+    template_context.clear();
+    delete data.template_context;
+  }
+}
+
 jQuery.template = function(node, mvc, map) {
-  Template.render_context_stack.push(
+  var $node = $(node);
+  var old_context = $node.data('template_context');
+  if(old_context) { old_context.clear(); }
+  var root_context = 
     new Template.RootRenderContext(mvc, $deepfreeze(map || {}))
-  );
+  Template.render_context_stack.push(root_context);
+  $node.data('template_context', root_context);
   try {
     Template(node, function() {
       Template.render.call(this);

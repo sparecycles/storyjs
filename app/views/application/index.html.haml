@@ -1,5 +1,5 @@
 - uses :dialog
--# = render :partial => 'dialog'
+- uses :style
 
 - content_for :templates do
   .dialog-content.test-dialog
@@ -38,7 +38,7 @@
           { label:'ok',     action:'ok'},
           { label:'cancel', action:'cancel'}
         ]),
-        function() { alert('dialog closed with: ' + this.scope.result); }
+        function() { if(false) alert('dialog closed with: ' + this.scope.result); }
       ]
     );
 

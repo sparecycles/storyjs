@@ -1,0 +1,28 @@
+
+- content_for :style do
+  :plain
+    * {
+      font-family: sans-serif;
+      font-size: 24pt;
+    }
+    body { 
+      background-color: #669;
+      color: #FFF;
+    }
+    button {
+      font-weight: bold;
+      color: white;
+      background: #359;
+      -webkit-box-shadow: 2px 2px 2px #222;
+      border-radius: 4px;
+      padding: 4px 6px;
+      border: 0px solid #77C;
+      -webkit-transition-duration: 0.1s, 0.2s; 
+      -webkit-transition-timing: linear;
+      -webkit-transition-property: background-color, -webkit-box-shadow;
+    }
+    button:active {
+      background: #114;
+      -webkit-box-shadow: none;
+      -webkit-transition-duration: 0s; 
+    }

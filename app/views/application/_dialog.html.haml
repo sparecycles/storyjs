@@ -1,4 +1,5 @@
 -# vim: set sw=2 ts=2 expandtab :
+- uses :style
 - content_for :templates do
   .dialog
     .frame
@@ -99,7 +100,7 @@
         }
       });
       this.data = model.data;
-      $("<div/>").appendTo($('body')).template(model, {
+      this.template = $("<div/>").appendTo($('body')).template(model, {
         '.' : { 
           $template: '=dialog-template',
           $setup: function() {
@@ -113,7 +114,8 @@
         return !!this.instance;
       },
       close: function() {
-        $(this.instance).remove();
+        this.template.clearTemplate().remove();
+        delete this.template;
         delete this.instance;
         delete this.data;
       }
