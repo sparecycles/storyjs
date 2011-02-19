@@ -20,6 +20,7 @@
   
 - content_for :script do
   :plain 
+    _layer.linkClasses();
     //new Dialog('test-dialog', {caption: 'world'}, function() {});
     //new Dialog('test-dialog', {caption: 'fffft'}, function() {});
     var model = new MVC({});
@@ -29,7 +30,7 @@
       '.action': '.action'
     });
     model.data('b', 'hello IE');
-    Simple = Story(
+    DialogStory = Story(
       { setup: function() { 
       } },
       [ 
@@ -37,17 +38,14 @@
           { label:'ok',     action:'ok'},
           { label:'cancel', action:'cancel'}
         ]),
-        function() { alert('hello'); }
+        function() { alert('dialog closed with: ' + this.scope.result); }
       ]
     );
 
     $('<button>dialog</button>')
     .click(function() {
-      var dialog = false && new Dialog('test-dialog', {caption: 'hello'}, [
-        { label:'ok',     action:'ok'},
-        { label:'cancel', action:'cancel'}
-      ]);
-      Simple.tell();
+      var story = DialogStory.tell();
+      story.update();
     })
     .appendTo($('body'))
 

@@ -58,34 +58,6 @@ Story.DefineNode('Loop', function() {
   }
 });
 
-Story.DefineNode('Dialog', function() {
-  var args = __args();
-  this.create_dialog = function() {
-    var instance = this;
-    var dialog = Dialog.apply(null, args);
-    var handler = dialog.data('handler')();
-    dialog.data('handler', function(arg) {
-      try {
-        return handler.call(this, arg);
-      } finally {
-        instance.scope.story.update();
-      }
-    });
-    return dialog;
-  }
-}, {
-  setup: function() {
-    this.dialog = this.create_dialog();
-  },
-  update: function() {
-    return this.dialog.is_open();
-  },
-  teardown: function() {
-    if(this.dialog.is_open()) {
-      this.dialog.close();
-    }
-  }
-})
 
 Story.DefineNode('Sequence', function() {
   this.steps = [];
