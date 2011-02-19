@@ -93,6 +93,7 @@
         handler: function(arg) { 
           var result = !handler || handler.call(this.arg);
           if(result || undefined === result) {
+            alert('testing');
             this.close();
           }
         }
