@@ -27,8 +27,11 @@ Template = _layer.defineClass(function Template(self, action) {
       child.clear();
     });
     $each(this.placeholders, function(placeholder) {
-      placeholder.data('node').insertBefore(placeholder);
-      placeholder.remove();
+      var placeholder_node = placeholder.data('node');
+      if(placeholder_node) {
+        placeholder.data('node').insertBefore(placeholder);
+        placeholder.remove();
+      }
     });
     $each(this.inserted, function(node) {
       node.remove();
@@ -110,8 +113,7 @@ Template.teardown = function(teardown) {
 };
 
 Template.remove = function(node, name) {
-  var placeholder = $('<!-- ' + (name||'template') + ' placeholder --"/>')
-    .insertAfter(node);
+  var placeholder = $(document.createComment((name||'template') + ' placeholder')).insertAfter(node);
   $each(Template.render_context_stack, function(rcontext) {
     rcontext.nodes = $map(rcontext.nodes, function(remembered) {
       if(remembered[0] === node[0]) throw 'reject';

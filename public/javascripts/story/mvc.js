@@ -176,6 +176,8 @@ MVC = _layer.defineClass(function(data) {
           } else listener.update(reasons);
         }
       } catch(ex) {
+        alert(ex);
+        alert(ex.message);
         console.warn(
           'MVC: Failed to update listener with reasons: ', reasons, ex.stack
         );
