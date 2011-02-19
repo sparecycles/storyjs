@@ -202,3 +202,11 @@ Story.and = function() {
 Story.not = function(fn) { 
   return function() { return !fn.apply(this, arguments); } 
 };
+
+Story.Node = _layer.defineClass(Story.Node, null, {
+  update: function() { return false; },
+  setup: function() { },
+  teardown: function() { },
+  handle: function(arg) { },
+  type: 'node'
+});

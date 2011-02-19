@@ -72,31 +72,49 @@
       '.button' : { $each : { button : '.buttons' },
         $in : 'button',
         '@text': '.label',
-        $setup : function() {
-          $(this).click(Template.access('handler').bind(
-            Template.access('dialog'),
-            Template.access('.action')
-          )); 
+        $setup :function() {
+          var dialog = Template.access('dialog');
+          var action = Template.access('.action');
+          var handler = Template.access('handler');
+          $(this).click(function() {
+            var controller = dialog.data('dialog');
+            handler.call(controller, action);
+          }); 
         }
       }
     });
 
     Dialog = _layer.defineClass(function(type, content, buttons, handler) {
       var self = this;
-      this.model = new MVC({type: type, content: content, buttons: buttons, handler: handler});
-      $("<div/>").appendTo($('body')).template(this.model, {
+      var model = new MVC({
+        type: type,
+        content: content,
+        buttons: buttons,
+        handler: function(arg) { 
+          var result = !handler || handler.call(this.arg);
+          if(result || undefined === result) {
+            this.close();
+          }
+        }
+      });
+      this.data = model.data;
+      $("<div/>").appendTo($('body')).template(model, {
         '.' : { 
           $template: '=dialog-template',
           $setup: function() {
             self.instance = this;
             $(this).data('dialog', self);
-            $(this).data('content', self.model.data('content'));
           }
         }
       });
     }, null, {
+      is_open: function() {
+        return !!this.instance;
+      },
       close: function() {
         $(this.instance).remove();
+        delete this.instance;
+        delete this.data;
       }
     });
     _layer.linkClasses();
@@ -114,25 +132,10 @@
 
 - content_for :head do
   %script{:src=>'game/bezier/b.js',:type=>'text/javascript'}
-- print 'Rendering ....'
+
 %p Testing
 #test
-  %div
-    Action:
-    %span.action
-  %div
-    A:
-    %span.a
-  %div
-    B:
-    %span.b
-  %div
-    C:
-    %span.c
-  %div.bezier-control{:style=>'width:100px; height:100px; border: 3px solid black; position:relative'}
-  %div
-    Bezier:
-    %canvas.bezier
+  
 - content_for :script do
   :plain 
     //new Dialog('test-dialog', {caption: 'world'}, function() {});
@@ -146,34 +149,24 @@
     model.data('b', 'hello IE');
     Simple = Story(
       { setup: function() { 
-        this.scope.buttons.each(function() {
-          $(this).click(Story.set('done', true));
-        });
       } },
-      [ Story.wait('done'), function() { this.scope.dialog.close(); } ]
+      [ 
+        Story.Dialog('test-dialog', {caption: 'hello'}, [
+          { label:'ok',     action:'ok'},
+          { label:'cancel', action:'cancel'}
+        ]), 
+        function() { alert('hello'); }
+      ]
     );
 
+    $('<button>dialog</button>')
+    .click(function() {
+      var dialog = false && new Dialog('test-dialog', {caption: 'hello'}, [
+        { label:'ok',     action:'ok'},
+        { label:'cancel', action:'cancel'}
+      ]);
+      Simple.tell();
+    })
+    .appendTo($('body'))
 
-    if(true) model.data('a', function() { 
-      
-      Template.inserted(
-        $('<button>add point</button>')
-        .click(function() {
-          var dialog = new Dialog('test-dialog', {caption: 'hello'}, [
-            {label:'ok', action:'ok'},
-            {label:'cancel', action:'cancel'}
-          ], function(action) {
-            switch(action) {
-            case 'ok':
-              dialog.model.data('content.caption', 'bye');
-              break;
-            case 'cancel':
-              $(this).remove();
-              break;
-            }
-          });
-        })
-        .appendTo($(this))
-      ); 
-    });
 -# vim: set sw=2 ts=2 expandtab :

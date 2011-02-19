@@ -1,4 +1,4 @@
-var TESTING = true;
+var TESTING = false;
 // Just in case
 if(Object.create === undefined || TESTING) {
   Object.create = function(proto) {
