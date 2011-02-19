@@ -1,0 +1,120 @@
+- content_for :templates do
+  .dialog
+    .frame
+      .content
+      .button-frame
+        .buttons
+          %button.button .label
+
+- content_for :style do
+  :plain
+    .dialog {
+      position: absolute;
+      top: 40px;
+      left: 40px;
+    }
+    .dialog .frame { 
+      background: #999;
+      padding: 3px;
+      border-radius: 10px;
+      border: 5px solid gray;
+      margin: 3px;
+      position: relative;
+    }
+    .dialog .button-frame {
+      border-top: 5px solid gray;
+      bottom: 0px;
+      width: 100%;
+      left:-3px;
+      margin-left: 3px;
+      position: absolute;
+      text-align: right;
+    }
+    .dialog .button-frame .buttons {
+      -webkit-box-shadow: 2px 2px 3px #333 inset;
+      border-bottom-left-radius: 30px 10px;
+      margin: 0 -5px -5px -5px;
+      border: 5px solid gray;
+      border-top: none;
+      background: #999;
+      padding: 10px;
+    }
+
+- content_for :script do
+  :plain
+    $('#templates .dialog').defineTemplate('dialog-template', {
+      $let : { dialog: '#self', type: '.type', handler : '.handler' }, 
+      '.frame' : { $let : {
+          'radius' : Template.coalesce('.radius', '=20px')
+        }, 
+        '@style' : [{ 
+          'border-radius' : 'radius'
+        }, { 
+          width: Template.coalesce('.width', '=500'), 
+          height: Template.coalesce('.height', '=200'),
+          padding: Template.coalesce('.padding', 'radius'),
+          'box-shadow' : '=3px 3px 5px #333, 2px 2px 3px #333 inset'
+        }],
+        '.buttons@style' : [{ 
+          'border-bottom-left-radius' : 'radius',
+          'border-bottom-right-radius' : 'radius',
+          'box-shadow' : '=3px 3px 5px #333, 2px 2px 3px #333 inset'
+        }, {
+          'border-top-left-radius' : '=0',
+          'border-top-right-radius' : '=0'
+        }]
+      },
+      '.content' : { 
+        $template : 'type',
+        $in : '.content', 
+        '...handler' : 'handler'
+      },
+      '.button' : { $each : { button : '.buttons' },
+        $in : 'button',
+        '@text': '.label',
+        $setup :function() {
+          var dialog = Template.access('dialog');
+          var action = Template.access('.action');
+          var handler = Template.access('handler');
+          $(this).click(function() {
+            var controller = dialog.data('dialog');
+            handler.call(controller, action);
+          }); 
+        }
+      }
+    });
+
+    Dialog = _layer.defineClass(function(type, content, buttons, handler) {
+      var self = this;
+      var model = new MVC({
+        type: type,
+        content: content,
+        buttons: buttons,
+        handler: function(arg) { 
+          var result = !handler || handler.call(this.arg);
+          if(result || undefined === result) {
+            this.close();
+          }
+        }
+      });
+      this.data = model.data;
+      $("<div/>").appendTo($('body')).template(model, {
+        '.' : { 
+          $template: '=dialog-template',
+          $setup: function() {
+            self.instance = this;
+            $(this).data('dialog', self);
+          }
+        }
+      });
+    }, null, {
+      is_open: function() {
+        return !!this.instance;
+      },
+      close: function() {
+        $(this.instance).remove();
+        delete this.instance;
+        delete this.data;
+      }
+    });
+    _layer.linkClasses();
