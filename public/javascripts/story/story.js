@@ -1,8 +1,6 @@
 Story.DefineNode('Action', function(node) {
   if(typeof node === 'function') {
     this.update = node;
-  } else if(Object(node) instanceof String && node.trimLeft().slice(0,1) == '{') {
-    this.update = new Function(node);
   } else {
     var node_functions = ['setup', 'teardown', 'update', 'handle'];
     $each.call(this, node_functions, function(fn) {
@@ -205,19 +203,19 @@ Story.DefineNode('Switch', function(states) {
     this.current_task = Story.setup(task);
   },
   teardown: function() {
-    Story.teardown(this.current_task);
+    if(this.current_task) Story.teardown(this.current_task);
     delete this.current_task;
   },
   update: function() {
-    return Story.update(this.current_task);
+    return this.current_task ? Story.update(this.current_task) : 0;
   },
   handle: function(arg) {
-    return Story.handle(this.current_task, arg);
+    return this.current_task ? Story.handle(this.current_task, arg) : 0;
   },
   select: function(state) {
     var next_task = this.tasks[state];
     if(next_task) {
-      Story.teardown(this.current_task);
+      if(this.current_task) Story.teardown(this.current_task);
       this.state = state;
       this.current_task = Story.setup(next_task);
     }

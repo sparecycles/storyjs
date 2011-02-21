@@ -35,12 +35,15 @@ $overlay(Story, {
     if(!instance) debugger;
     try {
       Story.activation.push(instance);
-      return instance[action].apply(instance, __args());
+	  var theaction = instance[action];
+	  if(theaction) return theaction.apply(instance, __args());
+	  else alert('action: ' + action + ' not understood (' + instance.constructor.name + ')');
     } finally {
       Story.activation.pop();
     }
   },
   setup: function(node) {
+    if(!node) return null;
     var instance = new Story.Instance(node, Story.active_instance());
     Story.instance_call(instance, 'setup');
     instance.requests = [];
@@ -205,7 +208,7 @@ $overlay(Story, {
   }, 
   not: function(fn) { 
     return function() { return !fn.apply(this, arguments); } 
-  },
+  }
 });
 
 $overlay(Story.Options, {
@@ -242,7 +245,7 @@ Story.Node = _layer.defineClass(Story.Node, null, {
         fn.apply(this, args);
       });
     } else {
-      console.log(this.class.name, "doesn't understand: ", action);
+      console.log(this.constructor.name, "doesn't understand: ", action);
       debugger;
     }
   },

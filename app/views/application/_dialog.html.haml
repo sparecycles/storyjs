@@ -86,16 +86,18 @@
       this.data = model.data;
       this.template = $("<div/>").appendTo($('body')).template(model, {
         '.' : {
-          $template: '.type',
+          $template: '.type'
         }
       });
     }, null, {
       is_open: function() {
-        return !!this.template;
+        return this.hasOwnProperty('template');
       },
       close: function() {
-        this.template.clearTemplate().remove();
-        delete this.template;
+        if(this.hasOwnProperty('template')) {
+          this.template.clearTemplate().remove();
+          delete this.template;
+        }
         delete this.data;
       }
     });
@@ -142,5 +144,5 @@
       $template : '=dialog-template',
       '...dialog' : '.dialog',
       '.content' : { $as : 'content', '@text' : '.content' },
-      '.title' : { $as : 'title', '@text' : '.title' },
+      '.title' : { $as : 'title', '@text' : '.title' }
     });
