@@ -43,13 +43,33 @@ $overlay(Story, {
   setup: function(node) {
     var instance = new Story.Instance(node, Story.active_instance());
     Story.instance_call(instance, 'setup');
+    instance.requests = [];
     return instance;
   },
   teardown: function(instance) {
     Story.instance_call(instance, 'teardown');
   },
+  handle_requests: function(instance) {
+	var requests;
+	while(requests = instance.requests) {
+	  if(requests.length == 0) break;
+	  instance.requests = [];
+	  $each(requests, function(req) {
+		req.call(instance);
+	  });
+	}
+  },
   update: function(instance) {
-    return Story.instance_call(instance, 'update');
+    var success = false;
+    try {
+      var result = Story.instance_call(instance, 'update');
+      success = true;
+      return result;
+    } finally {
+      if(success) {
+        Story.handle_requests(instance);
+      }
+    }
   },
   handle: function(instance, arg) {
     return Story.instance_call(instance, 'handle', arg);
@@ -160,7 +180,32 @@ $overlay(Story, {
     }
 
     return DefaultType.apply(null, list);
-  }
+  },
+  or: function() {
+    var terms = __args();
+    return function() { 
+      var result = false;
+      var args = __args();
+      $each.call(this, terms, function(fn) {
+        result = fn.apply(this, arguments) || result;
+      });
+      return result;
+    } 
+  }, 
+  and: function() {
+    var terms = __args();
+    return function() { 
+      var result = true;
+      var args = __args();
+      $each.call(this, terms, function(fn) {
+        result = fn.apply(this, arguments) && result;
+      });
+      return result;
+    } 
+  }, 
+  not: function(fn) { 
+    return function() { return !fn.apply(this, arguments); } 
+  },
 });
 
 $overlay(Story.Options, {
@@ -180,38 +225,26 @@ $overlay(Story.Options, {
   }
 });
 
-Story.or = function() {
-  var terms = __args();
-  return function() { 
-    var result = false;
-    var args = __args();
-    $each.call(this, terms, function(fn) {
-      result = fn.apply(this, arguments) || result;
-    });
-    return result;
-  } 
-} 
-
-Story.and = function() {
-  var terms = __args();
-  return function() { 
-    var result = true;
-    var args = __args();
-    $each.call(this, terms, function(fn) {
-      result = fn.apply(this, arguments) && result;
-    });
-    return result;
-  } 
-} 
-
-Story.not = function(fn) { 
-  return function() { return !fn.apply(this, arguments); } 
-};
-
 Story.Node = _layer.defineClass(Story.Node, null, {
   update: function() { return false; },
   setup: function() { },
   teardown: function() { },
   handle: function(arg) { },
+  please: function(action) {
+    var fn = action;
+    if(typeof fn === 'string') {
+      fn = this[fn];
+    }
+    if(typeof fn === 'function') {
+      if(!this.requests) this.requests = [];
+      var args = __args();
+      this.requests.push(function() {
+        fn.apply(this, args);
+      });
+    } else {
+      console.log(this.class.name, "doesn't understand: ", action);
+      debugger;
+    }
+  },
   type: 'node'
 });

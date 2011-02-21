@@ -17,13 +17,18 @@
           { label:'cancel', action:'cancel'}
         ]),
         Story.Switch({ 
-          ok: Story.Dialog('basic-dialog', {
-            title: 'Thanks!',
-            content: "You pressed OK, I hope you're ok with that",
-          }, [ 
-            { label : 'close', action: '.' }
-          ]),
-          cancel: [ function() { alert('restart?'); Story.find('testdialog').restart(); return 1; } ]
+          ok: [ 
+            Story.Dialog('basic-dialog', {
+              title: 'Thanks!',
+              content: "You pressed OK, I hope you're ok with that",
+            }, [ 
+              { label : 'close', action: '.' },
+              { label : 'cancel', action: 'cancel' }
+            ]),
+            Story.Switch({
+              cancel: [ function() { Story.find('testdialog').please('restart'); } ],
+            })
+          ]
         })
       ]
     );

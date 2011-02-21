@@ -81,6 +81,7 @@ Story.DefineNode('Sequence', function() {
     delete this.current_step;
   },
   select: function(index) {
+    this.selected = true;
     var steps = this.steps;
     if(this.current_step) { 
       Story.teardown(this.current_step);
@@ -94,8 +95,11 @@ Story.DefineNode('Sequence', function() {
   },
   update: function() {
     var steps = this.steps;
-    while(this.current_step && !Story.update(this.current_step))
-      this.select.call(this, this.index + 1);
+    while(this.current_step && !Story.update(this.current_step)) {
+      delete this.selected;
+      Story.handle_requests(this);
+      if(!this.selected) this.select.call(this, this.index + 1);
+    }
     return this.index < steps.length;
   },
   handle: function(arg) {
@@ -128,6 +132,7 @@ Story.DefineNode('Ignore', function() {
     }
   },
   select: function(index) {
+    this.selected = true;
     if(this.current_step) {
       Story.teardown(this.current_step);
       delete this.current_step;
