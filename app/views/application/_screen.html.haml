@@ -1,0 +1,26 @@
+-# vim: set sw=2 ts=2 expandtab :
+
+- content_for :template do
+  .screen
+    .content
+
+- content_for :style do
+  :plain
+    .screen,.screen>.content {
+      width: 1024px;
+      height: 768px;
+    }
+    .screen { 
+      position: absolute;
+      left: 0px;
+      top: 0px;
+    }
+    .screen > .content { 
+      position: relative;
+    }
+
+- content_for :script do
+  :plain
+    $('#template .screen').defineTemplate('screen-template', {
+      '.content' : '%screen-content'
+    });

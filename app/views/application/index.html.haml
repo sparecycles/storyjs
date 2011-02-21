@@ -1,44 +1,30 @@
 - uses :dialog
 - uses :style
 
-- content_for :templates do
-  .dialog-content.test-dialog
-    Testing
-    .caption{:style=>'background: red'}
-
-- content_for :script do
-  :plain
-    $('.dialog-content.test-dialog').defineTemplate('test-dialog', { 
-      '.caption' : '.caption' 
-    });
-
-- content_for :head do
-  %script{:src=>'game/bezier/b.js',:type=>'text/javascript'}
-
-%p Testing
-#test
-  
 - content_for :script do
   :plain 
     _layer.linkClasses();
-    //new Dialog('test-dialog', {caption: 'world'}, function() {});
-    //new Dialog('test-dialog', {caption: 'fffft'}, function() {});
-    var model = new MVC({});
-    $('#test').template(model, {
-      '.a': '.a',
-      '.b': '.b',
-      '.action': '.action'
-    });
-    model.data('b', 'hello IE');
+
     DialogStory = Story(
       { setup: function() { 
       } },
-      [ 
-        Story.Dialog('test-dialog', {caption: 'hello'}, [
+      [ '@testdialog',
+        Story.Dialog('basic-dialog', {
+          content: 'This is a test dialog',
+          title: 'Testing... 1. 2. 3.'
+        }, [
           { label:'ok',     action:'ok'},
           { label:'cancel', action:'cancel'}
         ]),
-        function() { if(false) alert('dialog closed with: ' + this.scope.result); }
+        Story.Switch({ 
+          ok: Story.Dialog('basic-dialog', {
+            title: 'Thanks!',
+            content: "You pressed OK, I hope you're ok with that",
+          }, [ 
+            { label : 'close', action: '.' }
+          ]),
+          cancel: [ function() { alert('restart?'); Story.find('testdialog').restart(); return 1; } ]
+        })
       ]
     );
 

@@ -109,6 +109,11 @@ $overlay(Story, {
       return this.scope[name]; 
     } 
   },
+  find: function(name) {
+    var root = Story.active_instance();
+	while(root.parent && root.name != name) root = root.parent;
+    return root;
+  },
   set: function(name, value, scope) {
     if(arguments.length < 3) scope = 1;
     var setfn = function() {

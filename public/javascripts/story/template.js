@@ -29,7 +29,10 @@ Template = _layer.defineClass(function Template(self, action) {
     $each(this.placeholders, function(placeholder) {
       var placeholder_node = placeholder.data('node');
       if(placeholder_node) {
-        placeholder.data('node').insertBefore(placeholder);
+        placeholder_node.remove();//insertBefore(placeholder);
+        //if(placeholder_node.closest('html').length == 0) {
+        //  placeholder_node.remove();
+        //}
         placeholder.remove();
       }
     });
@@ -113,7 +116,7 @@ Template.teardown = function(teardown) {
 };
 
 Template.remove = function(node, name) {
-  var placeholder = $(document.createComment((name||'template') + ' placeholder')).insertAfter(node);
+  var placeholder = Template.inserted($(document.createComment((name||'template') + ' placeholder')).insertAfter(node));
   $each(Template.render_context_stack, function(rcontext) {
     rcontext.nodes = $map(rcontext.nodes, function(remembered) {
       if(remembered[0] === node[0]) throw 'reject';
@@ -149,9 +152,11 @@ Template.scope = function(scope) {
 Template.access = function(path) {
   var navigation = Template.navigate(path);
   if(typeof navigation != 'function') {
-    console.warn('could not follow path:', path);
-    debugger;
-    return;
+    if(navigation === undefined) {
+      console.warn('could not follow path:', path);
+      debugger;
+    }
+    return navigation;
   }
   return navigation();
 };
@@ -253,7 +258,7 @@ Template.render = function() {
       }
       if(list) $range.call(this, 0, list('length')(), function(index) {
         var $this = $(this);
-        var clone = Template.inserted($this.clone().insertBefore($this));
+        var clone = $(Template.inserted($this.clone().insertBefore($this)));
         Template(this, function() {
           Template.scope($build(key, [list(index)], key + '-index', [MVC.constant(index)]));
           Template.render.call(clone);
@@ -293,10 +298,7 @@ Template.render = function() {
         $each.call(this, $let, evaluate_let_bindings);
       } else {
         $each.call(this, $let, function(value, key) {
-          switch(value) {
-          case '#self': return Template.scope($build(key, [MVC.constant(this)]));
-          default: return Template.scope($build(key, [Template.navigate(value)]));
-          }
+          return Template.scope($build(key, [Template.navigate(value)]));
         });
       }
     }).call(this, $let);
@@ -329,15 +331,12 @@ Template.render = function() {
     });
     Template.context().map.$contents = $deepfreeze(content_map);
     Template.context().map.$partial = this;
+    Template.context().map.$as_context = Template.context();
     var template_fn = Template.definedTemplates[$template];
     Template.opt(this, function() {
-      var node = template_fn().insertBefore(this);
-      Template.inserted(node);
-      if(Template.context().map.$setup) {
-        Template.context().map.$setup.call(node);
-      }
+      console.log('rendering template: ' + $template);
+      template_fn.call(this);
     });
-    Template.remove(this, 'template(' + $template + ')');
     return;
   }
 
@@ -368,16 +367,15 @@ Template.render = function() {
         for( ; context; context = context.parent) {
           var map = context.map;
           if(!map.$partial || !map.$contents) continue;
-          var contents_for = (map.$contents || {})[value.slice(1)] || {},
-              content_rules = [],
+          var contents_for = map.$contents[value.slice(1)],
               $partial = map.$partial;
 
-          $each.call($partial, contents_for, function(value, key) {
+          $each.call($partial, contents_for || {}, function(value, key) {
             var content = $(this).find(key);
             content_selector = content_selector.add(
               content.clone().data('template', {
                 map: value, 
-                data: Template.context().data
+                data: map.$as_context.data
               })
             );
             Template.remove(content, 'content_for ' + key);
@@ -515,14 +513,20 @@ jQuery.fn.defineTemplate = function(name, map) {
   }
   src.attr('id', null); // clear id attribute, probably the selector.
   Template.definedTemplates[name] = function() {
-    var clone = src.clone(),
-        parent = Object.create(Template.context());
-    Template(this[0], function() {
+    var parent = Object.create(Template.context());
+    Template(this, function() {
       Template.context().parent = parent;
       Template.context().map = Object.create(map);
+      var clone = Template.inserted(src.clone().insertAfter(this));
+
       Template.render.call(clone);
+
+      if(parent.map.$setup) {
+        parent.map.$setup.call(clone);
+      }
+
+      Template.remove(this, 'template(' + name + ')');
     });
-    return clone;
   }
 };
 

@@ -283,6 +283,13 @@ function $either(fn) {
   }
 }
 
+function $catch(fn) {
+  return function() {
+    try { return fn.apply(this, arguments); }
+    catch(ex) { return ex; }
+  };
+}
+
 function $list(map, fn) {
   var result = [];
   if(!fn) fn = function(value, key) { return [key,value]; };
@@ -443,6 +450,7 @@ new function() {
     }
 
     klasses.push(Class);
+    Class.toString = klass.toString.bind(klass);
     return Class;
   };
 

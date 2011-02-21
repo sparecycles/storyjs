@@ -102,6 +102,9 @@ Story.DefineNode('Sequence', function() {
     if(this.current_step) {
       Story.handle(this.current_step, arg);
     }
+  },
+  restart: function() {
+    return this.select(0);
   }
 });
 
@@ -178,15 +181,21 @@ Story.DefineNode('Group', function() {
   }
 });
 
-Story.DefineNode('State', function(start, states) {
+Story.DefineNode('Switch', function(states) {
   this.tasks = {};
-  this.start = start;
+  this.options = {};
   $each.call(this, states, function(t, k) {
-    this.tasks[k] = Story.register(this, t);
+    if(k.slice(0,1) != '$') {
+      if(t instanceof Array) {
+        t = Story.Build(Story.Sequence, t);
+      }
+      this.tasks[k] = Story.register(this, t);
+    } else this.options[k] = t;
   });
 }, {
   setup: function() {
-    this.state = this.start;
+    var $default = this.options.$default;
+    this.state = this.scope.result || $default;
     var task = this.tasks[this.state];
     this.current_task = Story.setup(task);
   },
@@ -195,10 +204,10 @@ Story.DefineNode('State', function(start, states) {
     delete this.current_task;
   },
   update: function() {
-    Story.update(this.current_task);
+    return Story.update(this.current_task);
   },
   handle: function(arg) {
-    Story.handle(this.current_task, arg);
+    return Story.handle(this.current_task, arg);
   },
   select: function(state) {
     var next_task = this.tasks[state];

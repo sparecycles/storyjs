@@ -1,0 +1,17 @@
+-# vim: set sw=2 ts=2 expandtab :
+- content_for :template do
+  .progress-bar
+    .frame
+      .title
+      .bar
+        .full
+      %button.cancel Cancel
+
+- content_for :style do
+  :plain
+    .progress-bar {
+      position: relative;
+      width: 200px;
+    }
+    .progress-bar .frame {
+    }
