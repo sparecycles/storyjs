@@ -31,6 +31,14 @@ Story.active = function() {
 }
 
 $overlay(Story, {
+  with_activation: function(instance, fn) {
+    try {
+      Story.activation.push(instance);
+      return fn.apply(instance, __args());
+    } finally {
+      Story.activation.pop();
+    }
+  },
   instance_call: function(instance, action) {
     if(!instance) debugger;
     try {
@@ -169,7 +177,9 @@ $overlay(Story, {
       teardown: function() {
         clearTimeout(this.timeout);
       },
-      update: function() { return !this.done; }
+      update: function() {
+        return !this.done;
+      }
     };
   },
   Build: function(DefaultType, list) {

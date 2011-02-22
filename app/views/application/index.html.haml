@@ -5,34 +5,40 @@
   :plain 
     _layer.linkClasses();
 
-    var _DialogStory = Story(
-      { setup: function() { 
-      } },
-      [ '@testdialog',
-        Story.Dialog('basic-dialog', {
-          content: 'This is a test dialog',
-          title: 'Testing... 1. 2. 3.'
-        }, [
-          { label: 'ok',     action: 'ok'     },
-          { label: 'cancel', action: 'cancel' }
-        ]),
-        Story.Switch({ 
-          ok: [ 
-            Story.Dialog('basic-dialog', {
-              title: 'Thanks!',
-              content: "You pressed OK, I hope you're ok with that"
-            }, [ 
-              { label : 'close', action: '.' },
-              { label : 'whoops', action: 'cancel' }
-            ]),
-            Story.Switch({
-              cancel: [ function() { Story.find('testdialog').please('restart'); } ]
-            })
-          ]
-        })
-      ]
-    );
-    DialogStory = _DialogStory;
+    var DialogStory = Story([ '@testdialog',
+      Story.Dialog('basic-dialog', {
+        content: 'This is a test dialog',
+        title: 'Testing... 1. 2. 3.'
+      }, [
+        { label: 'ok',     action: 'ok'     },
+        { label: 'cancel', action: 'cancel' }
+      ]),
+      Story.Switch({
+        ok: [ 
+          [ { setup: function() { console.log('okdialog setup'); },
+              teardown: function() { console.log('okdialog teardown'); } },
+          Story.Dialog('basic-dialog', {
+            title: 'Thanks!',
+            content: "You pressed OK, I hope you're ok with that"
+          }, [ 
+            { label : 'close', action: [ 
+               function() { this.scope.dialog.data('content', 'closing... please wait'); 
+               }, Story.delay(1000),
+               function() { this.scope.dialog.data('content', 'closing... please wait 3'); 
+               }, Story.delay(500),
+               function() { this.scope.dialog.data('content', 'closing... please wait 2'); 
+               }, Story.delay(500),
+               function() { this.scope.dialog.data('content', 'closing... please wait 1'); 
+               }, Story.delay(500)
+            ] },
+            { label : 'whoops', action: function() {
+              Story.with_activation(Story.find('testdialog'), function() { this.restart(); }); 
+              //this.scope.story.update();
+            } }
+          ]) ],
+        ]
+      })
+    ]);
 
     $('<button>dialog</button>')
     .click(function() {

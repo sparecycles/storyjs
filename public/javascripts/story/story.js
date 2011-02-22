@@ -130,7 +130,6 @@ Story.DefineNode('Ignore', function() {
     }
   },
   select: function(index) {
-    this.selected = true;
     if(this.current_step) {
       Story.teardown(this.current_step);
       delete this.current_step;

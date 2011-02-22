@@ -57,12 +57,15 @@
           $in : 'button',
           '@text': '.label',
           $setup: function() {
+            var elem = this;
             var controller = Template.access('data.self');
             var action = Template.access('.action');
             var handler = Template.access('data.handler');
-            $(this).click(function() {
+            var click_action = function() {
               handler.call(controller, action);
-            }); 
+            };
+            $(this).click(click_action); 
+            Template.teardown(function() { $(elem).unbind('click', click_action); });
           }
         }
       }
@@ -103,29 +106,62 @@
     });
 
     Story.DefineNode('Dialog', function() {
-      var args = __args();
+      var args = __args(); 
+      // maybe reprocess button into story nodes.
+      args[2] = $map.call(this, args[2], function(button) {
+        return $overlay(button, {action: function(action) {
+          var action = button.action;
+          if(typeof action === 'function') {
+            return action;
+          } else if(action instanceof Array) {
+            var node = Story.Build(Story.Sequence, action);
+            return Story.register(this, node);
+          } else if(action instanceof Story.Node) {
+            return Story.register(this, action);
+          } else {
+            return function() {
+              console.log('action: ', action);
+              this.parent.scope.result = action;
+              this.dialog.close();
+              this.scope.story.update();
+            };
+          }
+        }.call(this, button.action) }); 
+      });
+      
       this.create_dialog = function() {
         var instance = this;
         var dialog = Dialog.apply(null, args);
         var handler = dialog.data('dialog.handler')();
         dialog.data('dialog.handler', function(arg) {
-          try {
-            return handler.call(this, arg);
-          } finally {
-            instance.parent.scope.result = arg;
-            instance.scope.story.update();
+          if(!(arg instanceof Story.Node)) {
+            return Story.with_activation(instance, arg);
           }
+          instance.button_node = Story.with_activation(instance, function() { 
+            return Story.setup(arg);
+          });
+          instance.scope.story.update();
+          return true;
         });
         return dialog;
       };
     }, {
       setup: function() {
-        this.dialog = this.create_dialog();
+        this.dialog = this.scope.dialog = this.create_dialog();
       },
       update: function() {
-        return this.dialog.is_open();
+        if(this.button_node) {
+          if(!Story.update(this.button_node)) {
+            this.dialog.close();
+            return false;
+          }
+          return true;
+        } else return this.dialog.is_open();
       },
       teardown: function() {
+        if(this.button_node) {
+          Story.teardown(this.button_node);
+        }
         if(this.dialog.is_open()) {
           this.dialog.close();
         }
