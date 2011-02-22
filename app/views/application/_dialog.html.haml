@@ -120,7 +120,6 @@
             return Story.register(this, action);
           } else {
             return function() {
-              console.log('action: ', action);
               this.parent.scope.result = action;
               this.dialog.close();
               this.scope.story.update();

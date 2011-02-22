@@ -15,8 +15,6 @@
       ]),
       Story.Switch({
         ok: [ 
-          [ { setup: function() { console.log('okdialog setup'); },
-              teardown: function() { console.log('okdialog teardown'); } },
           Story.Dialog('basic-dialog', {
             title: 'Thanks!',
             content: "You pressed OK, I hope you're ok with that"
@@ -32,10 +30,11 @@
                }, Story.delay(500)
             ] },
             { label : 'whoops', action: function() {
-              Story.with_activation(Story.find('testdialog'), function() { this.restart(); }); 
-              //this.scope.story.update();
+              Story.with_activation(Story.find('testdialog'), function() { 
+                this.restart(); 
+              }); 
             } }
-          ]) ],
+          ]) 
         ]
       })
     ]);
