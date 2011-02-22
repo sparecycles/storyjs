@@ -403,25 +403,24 @@ Template.render = function() {
         var selector = split[0] == '' ? this : $(split[0], this);
         var attr = split[1];
         if(attr.slice(0,2) == 'on') {
+          var event_type = attr.slice(2),
+              action;
           if(typeof value === 'function') {
-            Template.opt(this, function() {
-              var param = {
-                data: Template.context().data,
-                map: Template.context().map,
-                scope: Template.scope()
-              };
-              var event_type = attr.slice(2);
-              var action =  function() { 
-                return value.apply(this, __args().concat([param])); 
-              };
-              selector.bind(event_type, action);
-              Template.teardown(function() { 
-                selector.unbind(event_type, action);
-              });
-            });
+            var param = {
+              data: Template.context().data,
+              map: Template.context().map,
+              scope: Template.scope()
+            };
+            action = function() { 
+              return value.apply(this, __args().concat([param])); 
+            };
           } else if(typeof value === 'string') {
-            selector.bind(attr.slice(2), Template.access(value));
+            action = Template.access(value);
           }
+          selector.bind(event_type, action);
+          Template.teardown(function() { 
+            selector.unbind(event_type, action);
+          });
         } else switch(attr.toLowerCase()) {
         case 'text':
           selector.text(Template.access(value));
