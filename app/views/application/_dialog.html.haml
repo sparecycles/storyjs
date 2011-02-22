@@ -36,7 +36,7 @@
 - content_for :script do
   :plain
     $('#template .dialog-template').defineTemplate('dialog-template', {
-      $template: Template.coalesce('.container', '=screen-template'),
+      $template: Template.coalesce('.container', '=screen'),
       $let : [{
         data: '...dialog' 
       }], 

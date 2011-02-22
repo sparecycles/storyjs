@@ -443,7 +443,7 @@ Template.render = function() {
               } else {
                 $each(style, function(value, key) {
                   value = Template.access(value);
-                  if(!value) throw 'reject';
+                  if(value === undefined || value === null) return;
                   var values = String(value).replace(/^\s+/, '').replace(/\s*$/, '').split(/\s+/);
                   value = $map(values, function(part) {
                     if(String(Number(part)) === part) {
