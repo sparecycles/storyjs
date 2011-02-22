@@ -106,7 +106,7 @@
     });
 
     Story.DefineNode('Dialog', function() {
-      var args = __args(); 
+      var args = __args();
       // maybe reprocess button into story nodes.
       args[2] = $map.call(this, args[2], function(button) {
         return $overlay(button, {action: function(action) {
@@ -134,13 +134,17 @@
         var handler = dialog.data('dialog.handler')();
         dialog.data('dialog.handler', function(arg) {
           if(!(arg instanceof Story.Node)) {
-            return Story.with_activation(instance, arg);
+            var result = Story.with_activation(instance, arg);
+            if(result !== false) dialog.close();
+          } else {
+            if(instance.button_node) {
+              Story.teardown(instance.button_node);
+            }
+            instance.button_node = Story.with_activation(instance, function() { 
+              return Story.setup(arg);
+            });
           }
-          instance.button_node = Story.with_activation(instance, function() { 
-            return Story.setup(arg);
-          });
           instance.scope.story.update();
-          return true;
         });
         return dialog;
       };
@@ -150,12 +154,9 @@
       },
       update: function() {
         if(this.button_node) {
-          if(!Story.update(this.button_node)) {
-            this.dialog.close();
-            return false;
-          }
-          return true;
-        } else return this.dialog.is_open();
+          Story.update(this.button_node);
+        }
+        return this.dialog.is_open();
       },
       teardown: function() {
         if(this.button_node) {

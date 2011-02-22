@@ -11,7 +11,8 @@
         title: 'Testing... 1. 2. 3.'
       }, [
         { label: 'ok',     action: 'ok'     },
-        { label: 'cancel', action: 'cancel' }
+        { label: 'cancel', action: 'cancel' },
+        { label: 'alart',  action: function() { alert('alart!'); return false; } },
       ]),
       Story.Switch({
         ok: [ 
@@ -27,13 +28,18 @@
                function() { this.scope.dialog.data('content', 'closing... please wait 2'); 
                }, Story.delay(500),
                function() { this.scope.dialog.data('content', 'closing... please wait 1'); 
-               }, Story.delay(500)
+               }, Story.delay(500), function() { this.scope.dialog.close(); }
             ] },
             { label : 'whoops', action: function() {
               Story.with_activation(Story.find('testdialog'), function() { 
                 this.restart(); 
               }); 
-            } }
+            } },
+            { label: 'test', action: Story.Dialog('basic-dialog', {
+                title: 'Inner Dialog',
+                content: "Inner dialogue is crazy talk."
+              }, [ { label: 'ok', action: 'thanks' } ] ) 
+            }
           ]) 
         ]
       })
