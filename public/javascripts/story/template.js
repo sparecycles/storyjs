@@ -334,7 +334,6 @@ Template.render = function() {
     Template.context().map.$as_context = Template.context();
     var template_fn = Template.definedTemplates[$template];
     Template.opt(this, function() {
-      console.log('rendering template: ' + $template);
       template_fn.call(this);
     });
     return;
@@ -411,8 +410,13 @@ Template.render = function() {
                 map: Template.context().map,
                 scope: Template.scope()
               };
-              selector.bind(attr.slice(2), function() { 
+              var event_type = attr.slice(2);
+              var action =  function() { 
                 return value.apply(this, __args().concat([param])); 
+              };
+              selector.bind(event_type, action);
+              Template.teardown(function() { 
+                selector.unbind(event_type, action);
               });
             });
           } else if(typeof value === 'string') {

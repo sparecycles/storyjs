@@ -134,7 +134,9 @@ $overlay(Story, {
   },
   find: function(name) {
     var root = Story.active_instance();
-	while(root.parent && root.name != name) root = root.parent;
+	while(root.parent && root.name != name) {
+      root = root.parent;
+    }
     return root;
   },
   set: function(name, value, scope) {
@@ -171,7 +173,7 @@ $overlay(Story, {
     };
   },
   Build: function(DefaultType, list) {
-    if(list.length > 0 && typeof list[0] === 'string') switch(list[0][0]) {
+    if(list.length > 0 && typeof list[0] === 'string') switch(list[0].slice(0,1)) {
     case '#':
       return Story.Build(Story[list[0].slice(1)], list.slice(1));
     case '@':

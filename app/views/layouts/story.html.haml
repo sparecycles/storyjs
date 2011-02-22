@@ -2,15 +2,19 @@
 !!!5
 %html
   %head
-    -#%script{:type=>'text/javascript'}
+    - @inline_javascript = false
     - %w[ jquery-1.5 json2 ].each do |js|
-      -# %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
-      :javascript
-        #{File.new("public/javascripts/#{js}.js").read}
+      - if @inline_javascript
+        :javascript
+          #{File.new("public/javascripts/#{js}.js").read}
+      - else
+        %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
     - %w[ layer story_core story mvc template ].each do |js|
-      -# %script{:src=>"/javascripts/story/#{js}.js", :type=>'text/javascript'}
-      :javascript
-        #{File.new("public/javascripts/story/#{js}.js").read}
+      - if @inline_javascript
+        :javascript
+          #{File.new("public/javascripts/story/#{js}.js").read}
+      - else
+        %script{:src=>"/javascripts/story/#{js}.js", :type=>'text/javascript'}
     = yield :head
     %style{:type=>'text/css'}
       = yield :style
