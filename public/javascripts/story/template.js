@@ -20,21 +20,22 @@ Template = _layer.defineClass(function Template(self, action) {
   return this.render();
 }, null, {
   clear: function() {
-    $each.call(this, this.destructors, function(destructor) {
-      destructor.call(this, this.self);
-    });
     $each(this.children, function(child) {
       child.clear();
     });
     $each(this.placeholders, function(placeholder) {
       var placeholder_node = placeholder.data('node');
+      placeholder.data('node', 0);
       if(placeholder_node) {
-        placeholder_node.remove();//insertBefore(placeholder);
+        placeholder_node.insertBefore(placeholder);
         //if(placeholder_node.closest('html').length == 0) {
         //  placeholder_node.remove();
         //}
         placeholder.remove();
-      }
+      } else { debugger; }
+    });
+    $each.call(this, this.destructors, function(destructor) {
+      destructor.call(this, this.self);
     });
     $each(this.inserted, function(node) {
       node.remove();
@@ -245,15 +246,17 @@ Template.render = function() {
 
   if(Template.context().map.$each) {
     var _each = Template.context().map.$each;
-    Template.context().map.$each = undefined;
     var key = $keys(_each)[0];
+    var value = _each[key];
+
+    Template.context().map.$each = undefined;
     
-    Template.opt(this, function() {
-      var list = Template.navigate(_each[key]);
+    Template(this, function() {
+      var list = Template.navigate(value);
       if(typeof list != 'function' || typeof list('length') != 'function') {
-        console.warn('Invalid list found in model for', _each[key]);
+        console.warn('Invalid list found in model for', value);
         debugger; // and do it again so we can step through it!
-        list = Template.navigate(_each[key]);
+        list = Template.navigate(value);
         debugger;
       }
       if(list) $range.call(this, 0, list('length')(), function(index) {
