@@ -3,7 +3,7 @@
 %html
   %head
     - @inline_javascript = false
-    - %w[ jquery-1.5 json2 ].each do |js|
+    - %w[ jquery-1.5.1 jquery-1.5.1-hack json2 ].each do |js|
       - if @inline_javascript
         :javascript
           #{File.new("public/javascripts/#{js}.js").read}
