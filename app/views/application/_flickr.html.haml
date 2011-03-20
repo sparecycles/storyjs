@@ -4,25 +4,65 @@
 
 - content_for :script do
   :plain
-    Story.DefineNode('Ajax', function(target, options) {
+    Flickr = {};
+    Flickr.Sign = function(request) {
+      var keys = Object.keys(request).sort();
+      var signature_string = "#{escape_javascript @flickr_api_secret}";
+      var querys = [];
+      $each(keys, function(key) {
+        var value = request[key];
+        signature_string += key;
+        signature_string += value;
+        querys.push(key + '=' + value);
+      });
+      var api_sig = hex_md5(signature_string);
+      querys.push('api_sig=' + api_sig);
+      debugger;
+      return querys.join('&');
+    }
+    Story.DefineNode('Flickr', function(target, method, data, options) {
       this.options = options;
       this.target = target;
+      this.data = data;
+      this.method = method;
     }, {
       setup: function() {
-        this.xhr = jQuery.ajax($override(this.options, {
-          complete: function(xhr, textstatus) {
-            debugger;
-            var result_scope = StoryTelling.findScope(this, this.target);
-            result_scope.result = { xhr: xhr, status: textstatus };
+        if(typeof this.data === 'function') this.data = this.data.call(this);
+
+
+        this.xhr = jQuery.ajax($overlay({ 
+          cache: true,
+          url: 'http://api.flickr.com/services/rest/',
+          data: Flickr.Sign($overlay({
+            method: this.method,
+            api_key: "#{escape_javascript @flickr_api_key}",
+            format: 'json'
+          }, this.data || {})),
+          dataType: 'jsonp',
+          jsonp: false,
+          jsonpCallback: 'jsonFlickrApi',
+          success: function(data, status) {
+            this.xhr.abort();
+            StoryTelling.findScope(this, this.target).data = data;
+            StoryTelling.findScope(this, this.target).result = status;
+            this.done = true;
             this.scope.story.update();
-          }.bind(this)
-        }));
+          }.bind(this),
+          error: function(xhr, status) {
+            StoryTelling.findScope(this, this.target).result = status;
+            this.done = true;
+            this.scope.story.update();
+          }.bind(this),
+          //jsonpCallback: this.callbackname,
+          timeout: 1000*10
+        }, this.options || {}));
       },
       update: function() {
-        return this.xhr.readyState < XMLHttpRequest.DONE;
+        return !this.done;
       },
       teardown: function() {
-        if(this.xhr.readyState < XMLHttpRequest.DONE) {
+        delete window.jsonFlickrApi;
+        if(!this.done) {
           this.xhr.abort();
         }
       }

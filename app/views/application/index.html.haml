@@ -18,19 +18,23 @@
         { label: 'alart',  action: function() { alert('alart!'); return false; } },
         { label: 'show', action: [ '@seq',
           [
-            Story.Ajax('seq', {
-              url: '/game/maze/index.html',
-              type: 'get',
-            }), 
+            Story.Flickr('seq', 'flickr.auth.getFrob', {
+            }, { timeout: 5000 }),
             Story.Message('ajax get...') 
           ],
-          [
-            Story.Message(function() {
-              debugger;
-              return this.scope.result.xhr.responseText.slice(0,100);
-            }),
-            Story.delay(3000)
-          ]
+          Story.Switch({
+            success: [[
+              Story.Message(function() {
+                debugger;
+                return 'success:' + JSON.stringify(this.scope.data);
+              }),
+              Story.delay(3000)
+            ]],
+            '*': [[
+              Story.Message("Error!"),
+              Story.delay(3000)
+            ]]
+          })
         ]}
       ]),
       Story.Switch({

@@ -199,6 +199,9 @@ Story.DefineNode('Switch', function(states) {
     var $default = this.options.$default;
     this.state = this.scope.result || $default;
     var task = this.tasks[this.state];
+    if(!task) {
+      task = this.tasks['*'];
+    }
     this.current_task = Story.setup(task);
   },
   teardown: function() {
@@ -213,6 +216,7 @@ Story.DefineNode('Switch', function(states) {
   },
   select: function(state) {
     var next_task = this.tasks[state];
+    if(!next_task) next_task = this.tasks[state];
     if(next_task) {
       if(this.current_task) Story.teardown(this.current_task);
       this.state = state;
