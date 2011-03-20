@@ -2,6 +2,7 @@
 - uses :style
 - uses :ajax
 - uses :flickr
+- uses :message
 
 - content_for :script do
   :plain 
@@ -15,6 +16,22 @@
         { label: 'ok',     action: 'ok'     },
         { label: 'cancel', action: 'cancel' },
         { label: 'alart',  action: function() { alert('alart!'); return false; } },
+        { label: 'show', action: [ '@seq',
+          [
+            Story.Ajax('seq', {
+              url: '/game/maze/index.html',
+              type: 'get',
+            }), 
+            Story.Message('ajax get...') 
+          ],
+          [
+            Story.Message(function() {
+              debugger;
+              return this.scope.result.xhr.responseText.slice(0,100);
+            }),
+            Story.delay(3000)
+          ]
+        ]}
       ]),
       Story.Switch({
         ok: [ 

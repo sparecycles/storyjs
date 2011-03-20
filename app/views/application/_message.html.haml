@@ -1,0 +1,78 @@
+-# vim: set sw=2 ts=2 expandtab :
+- uses :screen
+
+- content_for :template do
+  .message-template
+    .message
+
+- content_for :style do
+  :plain
+    .message {
+      position: absolute;
+      left: 40px;
+      top: 40px;
+      right: 40px;
+      bottom: 40px;
+      background: #999;
+      padding: 30px;
+      border-radius: 20px;
+      border: 10px solid gray;
+      -webkit-box-shadow: 2px 2px 5px black, 2px 2px 3px black inset; 
+    }
+
+- content_for :script do
+  :plain
+    $('#template .message-template').defineTemplate('message-template', {
+      $template: Template.coalesce('.container', '=screen'),
+      $let : { message: '...message' },
+      '.message' : {
+        $as : 'screen-content',
+        '@text' : 'message'
+      }
+    });
+
+    Message = _layer.defineClass(function(content) {
+      var self = this;
+      var model = new MVC({
+        message: content,
+      });
+      this.data = model.data;
+      this.template = $("<div/>").appendTo($('body')).template(model, {
+        '.' : {
+          $template: '=message-template',
+          '...message' : '.message'
+        }
+      });
+    }, null, {
+      is_open: function() {
+        return this.hasOwnProperty('template');
+      },
+      close: function() {
+        if(this.hasOwnProperty('template')) {
+          this.template.clearTemplate().remove();
+          delete this.template;
+        }
+        delete this.data;
+      }
+    });
+
+    Story.DefineNode('Message', function(message) {
+      this.create_dialog = function() {
+        var instance = this;
+        var themessage = message;
+        if(typeof themessage === 'function') {
+          themessage = themessage.call(this);
+        }
+        var dialog = new Message(themessage);
+        return dialog;
+      };
+    }, {
+      setup: function() {
+        this.dialog = this.scope.dialog = this.create_dialog();
+      },
+      teardown: function() {
+        if(this.dialog.is_open()) {
+          this.dialog.close();
+        }
+      }
+    });

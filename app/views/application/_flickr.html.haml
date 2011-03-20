@@ -4,4 +4,26 @@
 
 - content_for :script do
   :plain
-    
+    Story.DefineNode('Ajax', function(target, options) {
+      this.options = options;
+      this.target = target;
+    }, {
+      setup: function() {
+        this.xhr = jQuery.ajax($override(this.options, {
+          complete: function(xhr, textstatus) {
+            debugger;
+            var result_scope = StoryTelling.findScope(this, this.target);
+            result_scope.result = { xhr: xhr, status: textstatus };
+            this.scope.story.update();
+          }.bind(this)
+        }));
+      },
+      update: function() {
+        return this.xhr.readyState < XMLHttpRequest.DONE;
+      },
+      teardown: function() {
+        if(this.xhr.readyState < XMLHttpRequest.DONE) {
+          this.xhr.abort();
+        }
+      }
+    });
