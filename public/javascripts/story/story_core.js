@@ -19,6 +19,11 @@ StoryTelling = _layer.defineClass(function StoryTelling(instance) {
   teardown: function(arg) { return Story.teardown(this.instance); }
 })
 
+StoryTelling.findScope = function(instance, name) {
+  while(instance && instance.name != name) instance = instance.parent;
+  return instance ? instance.scope : null;
+}
+
 Story.Tell = function(story) {
 }
 
