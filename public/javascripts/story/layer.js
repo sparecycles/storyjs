@@ -465,4 +465,23 @@ new function() {
   };
 }();
 
+function $join(thing, how) {
+  if(!thing || !(thing instanceof Object)) return thing;
+  var mortar = how instanceof Array ? how[0] : how;
+  if(thing instanceof Array) {
+    var rest = how instanceof Array && how.length > 1 ? how.slice(1) : how;
+    return $map(thing, function(value) {
+      $join(value, rest);
+    }).join(mortar);
+  } else {
+    var qmortar = how instanceof Array && how.length > 1 ? how[1] : how;
+    var rest = how instanceof Array && how.length > 2 ? how.slice(2) : how;
+    var serial = [];
+    $each(Object.keys(thing), function(key) {
+      serial.push(String(key) + mortar + $join(thing[key], rest));
+    });
+    return serial.join(qmortar);
+  }
+}
+
 // vim: set sw=2 ts=2 expandtab :

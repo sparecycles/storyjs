@@ -20,11 +20,9 @@ Story.DefineNode('Loop', function() {
   });
 }, {
   setup: function() {
-    debugger;
     this.current_step = Story.setup(this.steps[this.index = 0]);
   },
   teardown: function() {
-    debugger;
     if(this.current_step) Story.teardown(this.current_step);
     delete this.current_step;
   },
@@ -55,7 +53,6 @@ Story.DefineNode('Loop', function() {
     }
   }
 });
-
 
 Story.DefineNode('Sequence', function() {
   this.steps = [];

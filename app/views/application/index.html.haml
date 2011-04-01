@@ -18,29 +18,66 @@
         { label: 'alart',  action: function() { alert('alart!'); return false; } },
         { label: 'show', action: [ '@seq',
           [
-            Story.Flickr('seq', 'flickr.auth.getFrob', {
-            }, { timeout: 5000 }),
-            Story.Message('ajax get...') 
+            {
+              setup: function() {
+                this.popup = this.parent.scope.popup = window.open('about:', 'authenticate', $join({
+                  width: 800,
+                  height: 800,
+                  screenX: 200,
+                  screenY: 200,
+                  toolbar: 'no',
+                  location: 'no',
+                  status: 'no',
+                  copyhistory: 'no',
+                  scrollbars: 'yes'
+                }, ['=',',']));
+                this.popup.onclose = function() { alert('BANG!'); };
+              },
+              teardown: function() {
+                if(!this.popup.closed) this.popup.close();
+              }
+            },
+            [
+              Story.Flickr('seq', 'flickr.auth.getFrob', {
+              }, { timeout: 5000 }),
+              Story.Switch({
+                success: [[ 
+                  { setup: function() {
+                    var url = 'http://flickr.com/services/auth';
+                    var params = { 
+                      api_key: Flickr.api_key,
+                      perms: 'read',
+                      frob: this.scope.data.frob._content,
+                    };
+                    this.scope.popup.location = url + '?' + Flickr.Sign(params)
+                  } }, 
+                  [{
+                    setup: function() {
+                      var story = this.scope.story;
+                      this.interval = setInterval(function() { story.update(); }, 500);
+                    },
+                    update: function() {
+                      return !this.scope.popup.closed;
+                    },
+                    teardown: function() {
+                      clearInterval(this.interval);
+                    }
+                  }],
+                ], 
+                Story.Flickr('seq', 'flickr.auth.getToken', function() {
+                  return {frob: this.scope.data.frob._content}
+                }),
+                function() { 
+                  alert(this.scope.data.auth.token._content);
+                }
+                ],
+                '*': [[
+                  Story.Message("Error!"),
+                  Story.delay(3000)
+                ]]
+              })
+            ]
           ],
-          Story.Switch({
-            success: [[ function() {
-              this.scope.auth_frame = $('<iframe/>')
-                .appendTo('body')
-                .css({position:'fixed'});
-              var url = 'http://flickr.com/services/auth';
-              var params = { 
-                api_key: Flickr.api_key,
-                perms: 'read',
-                frob: this.scope.data.frob._content,
-              };
-              debugger;
-              this.scope.auth_frame.attr('src', url + '?' + Flickr.Sign(params));
-            }, $constant(true) ]],
-            '*': [[
-              Story.Message("Error!"),
-              Story.delay(3000)
-            ]]
-          })
         ]}
       ]),
       Story.Switch({
