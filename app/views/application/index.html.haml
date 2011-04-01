@@ -24,7 +24,9 @@
           ],
           Story.Switch({
             success: [[ function() {
-              this.scope.auth_frame = $('<iframe/>').appendTo('body');
+              this.scope.auth_frame = $('<iframe/>')
+                .appendTo('body')
+                .css({position:'fixed'});
               var url = 'http://flickr.com/services/auth';
               var params = { 
                 api_key: Flickr.api_key,
