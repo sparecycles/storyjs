@@ -5,7 +5,9 @@
 - content_for :script do
   :plain
     Flickr = {};
+    Flickr.api_key = "#{escape_javascript @flickr_api_key}";
     Flickr.Sign = function(request) {
+      request = $overlay({}, request, { api_key: Flickr.api_key });
       var keys = Object.keys(request).sort();
       var signature_string = "#{escape_javascript @flickr_api_secret}";
       var querys = [];
@@ -17,7 +19,6 @@
       });
       var api_sig = hex_md5(signature_string);
       querys.push('api_sig=' + api_sig);
-      debugger;
       return querys.join('&');
     }
     Story.DefineNode('Flickr', function(target, method, data, options) {

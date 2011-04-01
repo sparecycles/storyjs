@@ -23,13 +23,17 @@
             Story.Message('ajax get...') 
           ],
           Story.Switch({
-            success: [[
-              Story.Message(function() {
-                debugger;
-                return 'success:' + JSON.stringify(this.scope.data);
-              }),
-              Story.delay(3000)
-            ]],
+            success: [[ function() {
+              this.scope.auth_frame = $('<iframe/>').appendTo('body');
+              var url = 'http://flickr.com/services/auth';
+              var params = { 
+                api_key: Flickr.api_key,
+                perms: 'read',
+                frob: this.scope.data.frob._content,
+              };
+              debugger;
+              this.scope.auth_frame.attr('src', url + '?' + Flickr.Sign(params));
+            }, $constant(true) ]],
             '*': [[
               Story.Message("Error!"),
               Story.delay(3000)
