@@ -35,7 +35,7 @@ Story.active = function() {
   return Story.activation.length > 0;
 }
 
-$overlay(Story, {
+_.overlay(Story, {
   with_activation: function(instance, fn) {
     try {
       Story.activation.push(instance);
@@ -70,7 +70,7 @@ $overlay(Story, {
 	while(requests = instance.requests) {
 	  if(requests.length == 0) break;
 	  instance.requests = [];
-	  $each(requests, function(req) {
+	  _.each(requests, function(req) {
 		req.call(instance);
 	  });
 	}
@@ -131,11 +131,11 @@ $overlay(Story, {
       "}                                                         " +
       "return Story$<name>;                                      "
     ).replace(/<name>/g, name))(create);
-    $overlay(Story[name].prototype, { type: name });
+    _.overlay(Story[name].prototype, { type: name });
     Story[name] = _layer.defineClass(Story[name], Story.Node, prototype);
   },
   wait: function() {
-    return Story.not(Story.and.apply(null, $map(__args(), function(arg) { 
+    return Story.not(Story.and.apply(null, _.map(__args(), function(arg) { 
       return Story.get(arg);
     }))); 
   },
@@ -228,7 +228,7 @@ $overlay(Story, {
   }
 });
 
-$overlay(Story.Options, {
+_.overlay(Story.Options, {
   construct: function(story_node, create, args) {
     var options = {};
 

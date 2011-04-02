@@ -6,8 +6,6 @@
 
 - content_for :script do
   :plain 
-    _layer.linkClasses();
-
     var DialogStory = Story([ '@testdialog',
       Story.Dialog('basic-dialog', {
         content: 'This is a test dialog',
@@ -20,7 +18,7 @@
           [
             {
               setup: function() {
-                this.popup = this.parent.scope.popup = window.open('about:', 'authenticate', $join({
+                this.popup = this.parent.scope.popup = window.open('about:', 'authenticate', _.join({
                   width: 800,
                   height: 800,
                   screenX: 200,

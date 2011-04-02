@@ -5,13 +5,14 @@
 - content_for :script do
   :plain
     Flickr = {};
-    Flickr.api_key = "#{escape_javascript @flickr_api_key}";
     Flickr.Sign = function(request) {
-      request = $overlay({}, request, { api_key: Flickr.api_key });
+      request = _.overlay({}, request, {
+         api_key: "#{escape_javascript @flickr_api_key}"
+      });
       var keys = Object.keys(request).sort();
       var signature_string = "#{escape_javascript @flickr_api_secret}";
       var querys = [];
-      $each(keys, function(key) {
+      _.each(keys, function(key) {
         var value = request[key];
         signature_string += key;
         signature_string += value;
@@ -31,12 +32,11 @@
         if(typeof this.data === 'function') this.data = this.data.call(this);
 
 
-        this.xhr = jQuery.ajax($overlay({ 
+        this.xhr = jQuery.ajax(_.overlay({ 
           cache: true,
           url: 'http://api.flickr.com/services/rest/',
-          data: Flickr.Sign($overlay({
+          data: Flickr.Sign(_.overlay({
             method: this.method,
-            api_key: "#{escape_javascript @flickr_api_key}",
             format: 'json'
           }, this.data || {})),
           dataType: 'jsonp',

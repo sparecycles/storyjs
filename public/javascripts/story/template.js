@@ -7,7 +7,7 @@ Template = _layer.defineClass(function Template(self, action) {
   this.children = [];
   this.inserted = [];
   this.mvc = Template.render_context().mvc;
-  var template_context = $overlay({}, Template.context());
+  var template_context = _.overlay({}, Template.context());
   template_context.render_context = this;
   //Object.freeze(template_context);
 
@@ -20,10 +20,10 @@ Template = _layer.defineClass(function Template(self, action) {
   return this.render();
 }, null, {
   clear: function() {
-    $each(this.children, function(child) {
+    _.each(this.children, function(child) {
       child.clear();
     });
-    $each(this.placeholders, function(placeholder) {
+    _.each(this.placeholders, function(placeholder) {
       var placeholder_node = placeholder.data('node');
       placeholder.data('node', 0);
       if(placeholder_node) {
@@ -34,10 +34,10 @@ Template = _layer.defineClass(function Template(self, action) {
         placeholder.remove();
       } else { debugger; }
     });
-    $each.call(this, this.destructors, function(destructor) {
+    _.each.call(this, this.destructors, function(destructor) {
       destructor.call(this, this.self);
     });
-    $each(this.inserted, function(node) {
+    _.each(this.inserted, function(node) {
       node.remove();
     });
     this.nodes = [];
@@ -118,8 +118,8 @@ Template.teardown = function(teardown) {
 
 Template.remove = function(node, name) {
   var placeholder = Template.inserted($(document.createComment((name||'template') + ' placeholder')).insertAfter(node));
-  $each(Template.render_context_stack, function(rcontext) {
-    rcontext.nodes = $map(rcontext.nodes, function(remembered) {
+  _.each(Template.render_context_stack, function(rcontext) {
+    rcontext.nodes = _.map(rcontext.nodes, function(remembered) {
       if(remembered[0] === node[0]) throw 'reject';
       return remembered;
     });
@@ -143,9 +143,9 @@ Template.scope = function(scope) {
   if(arguments.length == 0) return context.scope;
   else {
     if(Object.hasOwnProperty.call(context, 'scope')) {
-      $overlay(context.scope, scope);
+      _.overlay(context.scope, scope);
     } else {
-      context.scope = $override(context.scope, scope);
+      context.scope = _.override(context.scope, scope);
     }
   }
 };
@@ -188,17 +188,17 @@ Template.navigate = function(path) {
   // each... split ']' with stack up/down navigation -->
   // ['a', [ 'b', ['c'], [ 'd', [ 'e' ], '.f' ], '.g' ], '.h' ]
   var tree = [];
-  $each.call([], path.split('['), function(left_part) {
+  _.each.call([], path.split('['), function(left_part) {
     var chain = left_part.split(']'),
         subtree = [chain[0]];
     tree.push(subtree); this.push(tree); tree = subtree;
-    $each.call(this, chain.slice(1), function(right_part) {
+    _.each.call(this, chain.slice(1), function(right_part) {
       tree = this.pop();
       if(right_part.length) tree.push.apply(tree, right_part);
     });
   });
 
-  return $eval(tree);
+  return eval(tree);
 
   function primitive(path, context) {
     if(path.slice(0,1) == '.') {
@@ -215,12 +215,12 @@ Template.navigate = function(path) {
     }
   };
 
-  function $eval(tree) {
+  function eval(tree) {
     var base = primitive(tree[0], context);
     
-    $each(tree.slice(1), function(part) {
+    _.each(tree.slice(1), function(part) {
       if(part instanceof Array) {
-        base = base($eval(part)());
+        base = base(eval(part)());
       } else {
         base = base(part);
       }
@@ -246,7 +246,7 @@ Template.render = function() {
 
   if(Template.context().map.$each) {
     var _each = Template.context().map.$each;
-    var key = $keys(_each)[0];
+    var key = _.keys(_each)[0];
     var value = _each[key];
 
     Template.context().map.$each = undefined;
@@ -259,11 +259,11 @@ Template.render = function() {
         list = Template.navigate(value);
         debugger;
       }
-      if(list) $range.call(this, 0, list('length')(), function(index) {
+      if(list) _.range.call(this, 0, list('length')(), function(index) {
         var $this = $(this);
         var clone = $(Template.inserted($this.clone().insertBefore($this)));
         Template(this, function() {
-          Template.scope($build(key, [list(index)], key + '-index', [MVC.constant(index)]));
+          Template.scope(_.build(key, [list(index)], key + '-index', [MVC.constant(index)]));
           Template.render.call(clone);
         });
       });
@@ -279,7 +279,7 @@ Template.render = function() {
     
     Template.opt(this, function() {
       var list = Template.navigate($for);
-      if(list) $range.call(this, 0, list('length')(), function(index) {
+      if(list) _.range.call(this, 0, list('length')(), function(index) {
         Template(this, function() {
           var $this = $(this);
           Template.context().data = list(index)();
@@ -298,10 +298,10 @@ Template.render = function() {
     Template.context().map.$let = undefined;
     (function evaluate_let_bindings($let) {
       if($let instanceof Array) {
-        $each.call(this, $let, evaluate_let_bindings);
+        _.each.call(this, $let, evaluate_let_bindings);
       } else {
-        $each.call(this, $let, function(value, key) {
-          return Template.scope($build(key, [Template.navigate(value)]));
+        _.each.call(this, $let, function(value, key) {
+          return Template.scope(_.build(key, [Template.navigate(value)]));
         });
       }
     }).call(this, $let);
@@ -321,18 +321,18 @@ Template.render = function() {
     var $template = Template.access(Template.context().map.$template);
     Template.context().map.$template = undefined;
     var content_map = {};
-    $each(Template.context().map, function(value, key) {
+    _.each(Template.context().map, function(value, key) {
       if(value && value.$as) {
         var $as = value.$as;
-        content_map[$as] = $overlay(content_map[$as] || {}, $build(
+        content_map[$as] = _.overlay(content_map[$as] || {}, _.build(
           key,
-          [$map($override(value, { $as: undefined }), function(x) {
+          [_.map(_.override(value, { $as: undefined }), function(x) {
             if(x === undefined) throw 'reject'; return x;
           })]
         ));
       }
     });
-    Template.context().map.$contents = $deepfreeze(content_map);
+    Template.context().map.$contents = _.deepfreeze(content_map);
     Template.context().map.$partial = this;
     Template.context().map.$as_context = Template.context();
     var template_fn = Template.definedTemplates[$template];
@@ -358,7 +358,7 @@ Template.render = function() {
     return;
   }
 
-  $each.call(this, Template.context().map, function(value, key) { Template(this, function() {
+  _.each.call(this, Template.context().map, function(value, key) { Template(this, function() {
     if(key.slice(0,1) == '$') return;
     var map_index = 0;
     if(Number(value) == value) value = Number(value);
@@ -372,7 +372,7 @@ Template.render = function() {
           var contents_for = map.$contents[value.slice(1)],
               $partial = map.$partial;
 
-          $each.call($partial, contents_for || {}, function(value, key) {
+          _.each.call($partial, contents_for || {}, function(value, key) {
             var content = $(this).find(key);
             content_selector = content_selector.add(
               content.clone().data('template', {
@@ -437,19 +437,19 @@ Template.render = function() {
             style = Template.access(value);
           }
 
-          if(!$is_primitive(style)) {
+          if(!_.is_primitive(style)) {
             var result = [];
             function enumerate(style) {
               if(style instanceof Array) {
-                $each(style, enumerate);
+                _.each(style, enumerate);
               } else {
-                $each(style, function(value, key) {
+                _.each(style, function(value, key) {
                   value = Template.access(value);
                   if(value === undefined || value === null) return;
                   var values = String(value).replace(/^\s+/, '').replace(/\s*$/, '').split(/\s+/);
-                  value = $map(values, function(part) {
+                  value = _.map(values, function(part) {
                     if(String(Number(part)) === part) {
-                      return String(Number(part)) + ($until([
+                      return String(Number(part)) + (_.until([
                         [/^left$|^right$|^top$|^bottom$/, 'px'],
                         [/^margin|^padding|^border/, 'px'],
                         [/^width$|^height$/, 'px'],
@@ -570,7 +570,7 @@ jQuery.template = function(node, mvc, map) {
   var old_context = $node.data('template_context');
   if(old_context) { old_context.clear(); }
   var root_context = 
-    new Template.RootRenderContext(mvc, $deepfreeze(map || {}))
+    new Template.RootRenderContext(mvc, _.deepfreeze(map || {}))
   Template.render_context_stack.push(root_context);
   $node.data('template_context', root_context);
   try {

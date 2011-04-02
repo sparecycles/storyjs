@@ -21,7 +21,7 @@ MVC = _layer.defineClass(function(data) {
     //console.log('write: ', path);
     var parts = path.split('.');
     var root, branch = this.written;
-    $each(parts, function(part) {
+    _.each(parts, function(part) {
       if(branch === true) {
         return;
       } 
@@ -49,7 +49,7 @@ MVC = _layer.defineClass(function(data) {
   },
   restore_access_scope: function() {
     var stack = this.accessed_stack.pop();
-    var scope = $keys(stack);
+    var scope = _.keys(stack);
     return scope;
   },
   locked: function(action) {
@@ -89,7 +89,7 @@ MVC = _layer.defineClass(function(data) {
   register: function(listener, reasons) {
     var id = this.generate_listener_id();
     this.listeners[id] = { listener: listener, reasons: reasons };
-    $each.call(this, reasons, function(reason) {
+    _.each.call(this, reasons, function(reason) {
       var thereason = this.reasons[reason];
       if(!thereason) {
         thereason = this.reasons[reason] = { count: 0 };
@@ -102,7 +102,7 @@ MVC = _layer.defineClass(function(data) {
   clear: function(listener_id) {
     if(listener_id) {
       var listener = this.listeners[listener_id];
-      $each.call(this, listener.reasons, function(reason) {
+      _.each.call(this, listener.reasons, function(reason) {
         delete this.reasons[reason][listener_id];
         if(0 == --this.reasons[reason].count) {
           delete this.reasons[reason];
@@ -151,7 +151,7 @@ MVC = _layer.defineClass(function(data) {
   },
   flush: function() {
     var updated_listeners = {};
-    $each.call(this, this.updated_paths(), function(reason) {
+    _.each.call(this, this.updated_paths(), function(reason) {
       for(var listener_id in (this.reasons[reason] || {})) {
         if(listener_id == 'count') continue;
         if(!Object.hasOwnProperty.call(updated_listeners, listener_id)) {
@@ -160,7 +160,7 @@ MVC = _layer.defineClass(function(data) {
         updated_listeners[listener_id].push(reason);
       }
     });
-    $each.call(this, updated_listeners, function(reasons, id) {
+    _.each.call(this, updated_listeners, function(reasons, id) {
       if(!this.listeners[id]) return;
       var listener = this.listeners[id].listener;
       try {
@@ -189,7 +189,10 @@ MVC = _layer.defineClass(function(data) {
 });
 
 MVC.constant = function(value) {
-  return new MVC.wrapper({read:_layer.layer.noop, write:_layer.layer.noop}, value, '!');
+  return new MVC.wrapper({
+    read: _.noop,
+    write: _.noop
+  }, value, '!');
 }
 
 MVC.wrapper = _layer.defineClass(function MVC_wrapper(mvc, value, path) {
@@ -197,7 +200,7 @@ MVC.wrapper = _layer.defineClass(function MVC_wrapper(mvc, value, path) {
   this.value = value;
   this.path = path;
   var wrapper = MVC.wrapper.fn.bind(this);
-  wrapper._ = $override(MVC.wrapper.fn._, { self: wrapper });
+  wrapper._ = _.override(MVC.wrapper.fn._, { self: wrapper });
   return wrapper;
 }, null, {
   get: function(access) {

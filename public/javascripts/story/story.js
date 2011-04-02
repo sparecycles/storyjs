@@ -3,7 +3,7 @@ Story.DefineNode('Action', function(node) {
     this.update = node;
   } else {
     var node_functions = ['setup', 'teardown', 'update', 'handle'];
-    $each.call(this, node_functions, function(fn) {
+    _.each.call(this, node_functions, function(fn) {
       if(node[fn]) this[fn] = node[fn];
     });
   }
@@ -12,7 +12,7 @@ Story.DefineNode('Action', function(node) {
 Story.DefineNode('Loop', function() {
   this.steps = [];
   this.index = -1;
-  $each.call(this, __args(), function(node) {
+  _.each.call(this, __args(), function(node) {
     if(node instanceof Array) {
       node = Story.Build(Story.Group, node);
     }
@@ -61,7 +61,7 @@ Story.DefineNode('Sequence', function() {
   if(args[0] instanceof Story.Options) {
     args.shift().applyTo(this);
   }
-  $each.call(this, args, function(node) {
+  _.each.call(this, args, function(node) {
     if(node instanceof Array) {
       node = Story.Build(Story.Group, node);
     }
@@ -110,7 +110,7 @@ Story.DefineNode('Sequence', function() {
 Story.DefineNode('Ignore', function() {
   this.steps = [];
   this.index = -1;
-  $each.call(this, __args(), function(node) {
+  _.each.call(this, __args(), function(node) {
     if(node instanceof Array) {
       node = Story.Build(Story.Group, node);
     }
@@ -149,7 +149,7 @@ Story.DefineNode('Ignore', function() {
 
 Story.DefineNode('Group', function() { 
   this.nodes = [];
-  $each.call(this, __args(), function(node) {
+  _.each.call(this, __args(), function(node) {
     if(node instanceof Array) {
       node = Story.Build(Story.Sequence, node);
     }
@@ -157,24 +157,24 @@ Story.DefineNode('Group', function() {
   });
 }, {
   setup: function() {
-    this.instances = $map.call(this, this.nodes, function(node) {
+    this.instances = _.map.call(this, this.nodes, function(node) {
       return Story.setup(node);
     });
   },
   teardown: function() {
-    $each(this.instances, function(node) {
+    _.each(this.instances, function(node) {
       Story.teardown(node);
     });
   },
   update: function() {
     var result = false;
-    $each(this.instances, function(node) {
+    _.each(this.instances, function(node) {
       result = Story.update(node) || result;
     });
     return result;
   },
   handle: function(arg) {
-    $each(this.instances, function(node) {
+    _.each(this.instances, function(node) {
       Story.handle(node, arg);
     });
   }
@@ -183,7 +183,7 @@ Story.DefineNode('Group', function() {
 Story.DefineNode('Switch', function(states) {
   this.tasks = {};
   this.options = {};
-  $each.call(this, states, function(t, k) {
+  _.each.call(this, states, function(t, k) {
     if(k.slice(0,1) != '$') {
       if(t instanceof Array) {
         t = Story.Build(Story.Sequence, t);

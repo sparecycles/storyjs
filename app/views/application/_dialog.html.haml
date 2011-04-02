@@ -73,7 +73,7 @@
 
     Dialog = _layer.defineClass(function(type, content, buttons, handler) {
       var self = this;
-      var model = new MVC($overlay({}, content, {
+      var model = new MVC(_.overlay({}, content, {
         type: type,
         dialog: {
           self: self,
@@ -108,8 +108,8 @@
     Story.DefineNode('Dialog', function() {
       var args = __args();
       // maybe reprocess button into story nodes.
-      args[2] = $map.call(this, args[2], function(button) {
-        return $overlay(button, {action: function(action) {
+      args[2] = _.map.call(this, args[2], function(button) {
+        return _.overlay(button, {action: function(action) {
           var action = button.action;
           if(typeof action === 'function') {
             return action;
