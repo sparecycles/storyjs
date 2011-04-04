@@ -4,16 +4,31 @@
 - uses :flickr
 - uses :message
 
+- content_for :title do
+  Story
+
 - content_for :script do
   :plain 
     var DialogStory = Story([ '@testdialog',
+      function() { this.scope.test = 'test'; },
       Story.Dialog('basic-dialog', {
         content: 'This is a test dialog',
         title: 'Testing... 1. 2. 3.'
       }, [
         { label: 'ok',     action: 'ok'     },
         { label: 'cancel', action: 'cancel' },
-        { label: 'alart',  action: function() { alert('alart!'); return false; } },
+        { label: 'test A', action: Story.Sequence(Story.Options({owns_scope: false}), function() {
+          alert('test was ' + this.scope.test); 
+          this.scope.test = 'A'; 
+        }, function() { 
+          alert('test is ' + this.scope.test); 
+        })},
+        { label: 'test B', action: Story.Sequence(function() { 
+          alert('test was ' + this.scope.test);
+          this.scope.test = 'B';
+        }, function() {
+          alert('test is ' + this.scope.test); 
+        })},
         { label: 'show', action: [ '@seq',
           [
             {
@@ -39,39 +54,31 @@
               Story.Flickr('seq', 'flickr.auth.getFrob', {
               }, { timeout: 5000 }),
               Story.Switch({
-                success: [[ 
-                  { setup: function() {
-                    var url = 'http://flickr.com/services/auth';
-                    var params = { 
-                      api_key: Flickr.api_key,
-                      perms: 'read',
-                      frob: this.scope.data.frob._content,
-                    };
-                    this.scope.popup.location = url + '?' + Flickr.Sign(params)
-                  } }, 
-                  [{
+                success: [
+                  Story.Live(500, { 
                     setup: function() {
-                      var story = this.scope.story;
-                      this.interval = setInterval(function() { story.update(); }, 500);
-                    },
+                      var url = 'http://flickr.com/services/auth';
+                      var params = { 
+                        api_key: Flickr.api_key,
+                        perms: 'read',
+                        frob: this.scope.data.frob._content,
+                      };
+                      this.scope.popup.location = url + '?' + Flickr.Sign(params)
+                    }, 
                     update: function() {
                       return !this.scope.popup.closed;
-                    },
-                    teardown: function() {
-                      clearInterval(this.interval);
-                    }
-                  }],
-                ], 
-                Story.Flickr('seq', 'flickr.auth.getToken', function() {
-                  return {frob: this.scope.data.frob._content}
-                }),
-                function() { 
-                  alert(this.scope.data.auth.token._content);
-                }
+                    } 
+                  }),
+                  Story.Flickr('seq', 'flickr.auth.getToken', function() {
+                    return {frob: this.scope.data.frob._content}
+                  }),
+                  function() { 
+                    alert(this.scope.data.auth.token._content);
+                  }
                 ],
                 '*': [[
                   Story.Message("Error!"),
-                  Story.delay(3000)
+                  Story.Delay(3000)
                 ]]
               })
             ]
@@ -86,13 +93,13 @@
           }, [ 
             { label : 'close', action: [ 
                function() { this.scope.dialog.data('content', 'closing... please wait'); 
-               }, Story.delay(1000),
+               }, Story.Delay(1000),
                function() { this.scope.dialog.data('content', 'closing... please wait 3'); 
-               }, Story.delay(500),
+               }, Story.Delay(500),
                function() { this.scope.dialog.data('content', 'closing... please wait 2'); 
-               }, Story.delay(500),
+               }, Story.Delay(500),
                function() { this.scope.dialog.data('content', 'closing... please wait 1'); 
-               }, Story.delay(500), function() { this.scope.dialog.close(); }
+               }, Story.Delay(500), function() { this.scope.dialog.close(); }
             ] },
             { label : 'whoops', action: function() {
               Story.with_activation(Story.find('testdialog'), function() { 

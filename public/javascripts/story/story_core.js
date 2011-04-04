@@ -1,17 +1,19 @@
-Story = _layer.defineClass(function Story() { 
-  this.story = Story.Build(Story.Group, __args());
-}, null, {
-  tell: function(scope) { 
-    var instance = Object.create(this.story);
-    instance.scope = Object.create(scope || {});
-    instance.scope.self = instance;
-    var telling = instance.scope.story = new StoryTelling(instance);
-    Story.instance_call(instance, 'setup');
-    return telling;
-  }
+Story = _.Class({
+  init: function() {
+    this.story = Story.Build(Story.Group, __args());
+  }, 
+  proto: {
+    tell: function(scope) { 
+      var instance = Object.create(this.story);
+      instance.scope = Object.create(scope || {});
+      var telling = instance.scope.story = new StoryTelling(instance);
+      Story.instance_call(instance, 'setup');
+      return telling;
+    }
+  } 
 });
 
-StoryTelling = _layer.defineClass(function StoryTelling(instance) {
+StoryTelling = _.defineClass(function StoryTelling(instance) {
   this.instance = instance;
 }, null, {
   update: function() { return Story.update(this.instance); },
@@ -20,44 +22,31 @@ StoryTelling = _layer.defineClass(function StoryTelling(instance) {
 })
 
 StoryTelling.findScope = function(instance, name) {
-  while(instance && instance.name != name) instance = instance.parent;
+  while(instance && instance.options.name != name) instance = instance.parent;
   return instance ? instance.scope : null;
 }
 
 Story.Tell = function(story) {
 }
 
-Story.activation = [];
-Story.active_instance = function() {
-  return Story.activation.slice(-1)[0] || null;
-}
 Story.active = function() {
-  return Story.activation.length > 0;
+  return !!Story.active_instance;
 }
 
 _.overlay(Story, {
   with_activation: function(instance, fn) {
-    try {
-      Story.activation.push(instance);
+    return _.local.call(Story, {active_instance: instance}, function() { 
       return fn.apply(instance, __args());
-    } finally {
-      Story.activation.pop();
-    }
+    }).call(instance, __args());
   },
   instance_call: function(instance, action) {
-    if(!instance) debugger;
-    try {
-      Story.activation.push(instance);
-	  var theaction = instance[action];
-	  if(theaction) return theaction.apply(instance, __args());
-	  else alert('action: ' + action + ' not understood (' + instance.constructor.name + ')');
-    } finally {
-      Story.activation.pop();
-    }
+    return _.local.call(Story, {active_instance: instance}, 
+      instance[action]
+    ).apply(instance, __args());
   },
   setup: function(node) {
     if(!node) return null;
-    var instance = new Story.Instance(node, Story.active_instance());
+    var instance = new Story.Instance(node, Story.active_instance);
     Story.instance_call(instance, 'setup');
     instance.requests = [];
     return instance;
@@ -66,14 +55,14 @@ _.overlay(Story, {
     Story.instance_call(instance, 'teardown');
   },
   handle_requests: function(instance) {
-	var requests;
-	while(requests = instance.requests) {
-	  if(requests.length == 0) break;
-	  instance.requests = [];
-	  _.each(requests, function(req) {
-		req.call(instance);
-	  });
-	}
+    var requests;
+    while(requests = instance.requests) {
+      if(requests.length == 0) break;
+      instance.requests = [];
+      _.each(requests, function(req) {
+        req.call(instance);
+      });
+    }
   },
   update: function(instance) {
     var success = false;
@@ -93,14 +82,17 @@ _.overlay(Story, {
   Instance: function(node, parent) {
     var instance = Object.create(node);
     instance.parent = parent;
-    instance.scope = new Story.Scope(instance);
+    if(node.options.owns_scope) {
+      instance.scope = new Story.Scope(instance);
+    } else {
+      instance.scope = parent.scope;
+    }
     return instance;
   },
   Scope: function(instance, parent) {
     var proto = instance.parent ? instance.parent.scope : Object.prototype;
     if(typeof proto != 'object') debugger;
     var scope = Object.create(proto);
-    scope.self = instance;
     return scope;
   },
   register: function(parent, node) {
@@ -116,76 +108,29 @@ _.overlay(Story, {
   Options: function(options) {
     var self = this;
     if(this.constructor != Story.Options) self = new Story.Options();
-    this.options = options;
+    self.options = options;
     return self;
   },
-  DefineNode: function(name, create, prototype) {
+  DefineNode: function(name, init, prototype, options) {
     // use eval to build function which has a decent name.
-    Story[name] = new Function('create', (
-      "function Story$<name>() {                                 " + 
-      "  var self = this.constructor == Story$<name>             " +
+    Function('init', 'Story', 'options', _.evil_format(
+      "Story.%{name} = function Story_%{name}() {                " + 
+      "  var self = this.constructor == Story.%{name}            " +
       "    ? this                                                " +
-      "    : Object.create(Story.<name>.prototype);              " +
+      "    : Object.create(Story.%{name}.prototype);             " +
       "  self.children = [];                                     " +
-      "  return Story.Options.construct(self, create, __args()); " +
-      "}                                                         " +
-      "return Story$<name>;                                      "
-    ).replace(/<name>/g, name))(create);
-    _.overlay(Story[name].prototype, { type: name });
-    Story[name] = _layer.defineClass(Story[name], Story.Node, prototype);
-  },
-  wait: function() {
-    return Story.not(Story.and.apply(null, _.map(__args(), function(arg) { 
-      return Story.get(arg);
-    }))); 
-  },
-  get: function(name) {
-    return function() { 
-      if(!this.scope) debugger;
-      return this.scope[name]; 
-    } 
+      "  self.options = options;                                 " +
+      "  return Story.Options.construct(self, init, __args());   " +
+      "}                                                         "
+    , { name: name }))(init, Story, options || {});
+    Story[name] = _.defineClass(Story[name], Story.Node, prototype);
   },
   find: function(name) {
-    var root = Story.active_instance();
-	while(root.parent && root.name != name) {
+    var root = Story.active_instance;
+    while(root.parent && root.name != name) {
       root = root.parent;
     }
     return root;
-  },
-  set: function(name, value, scope) {
-    if(arguments.length < 3) scope = 1;
-    var setfn = function() {
-      var root = this;
-      var story = root.scope.story;
-      if(typeof scope === 'number') {
-        for(var i = 0; i < scope; i++) root = root.parent;
-      } else {
-        while(root.parent && root.name != scope) root = root.parent;
-      }
-      if(root === undefined) debugger;
-      return function() {
-        root.scope[name] = value;
-        story.update();
-      }
-    };
-    return Story.active() ? setfn.call(Story.active_instance()) : setfn;
-  },
-  delay: function(ms) {
-    return {
-      setup: function() {
-        var self = this;
-        this.timeout = setTimeout(function() {
-          self.done = true; 
-          self.scope.story.update(); 
-        }, ms);
-      },
-      teardown: function() {
-        clearTimeout(this.timeout);
-      },
-      update: function() {
-        return !this.done;
-      }
-    };
   },
   Build: function(DefaultType, list) {
     if(list.length > 0 && typeof list[0] === 'string') switch(list[0].slice(0,1)) {
@@ -200,52 +145,28 @@ _.overlay(Story, {
     }
 
     return DefaultType.apply(null, list);
-  },
-  or: function() {
-    var terms = __args();
-    return function() { 
-      var result = false;
-      var args = __args();
-      $each.call(this, terms, function(fn) {
-        result = fn.apply(this, arguments) || result;
-      });
-      return result;
-    } 
-  }, 
-  and: function() {
-    var terms = __args();
-    return function() { 
-      var result = true;
-      var args = __args();
-      $each.call(this, terms, function(fn) {
-        result = fn.apply(this, arguments) && result;
-      });
-      return result;
-    } 
-  }, 
-  not: function(fn) { 
-    return function() { return !fn.apply(this, arguments); } 
   }
 });
 
 _.overlay(Story.Options, {
-  construct: function(story_node, create, args) {
-    var options = {};
+  construct: function(node, init, args) {
+    var options = null;
 
     if(args[0] instanceof Story.Options) {
-      options = args.shift();
+      options = args.shift().options;
     }
 
-    create.apply(story_node, args);
+    init.apply(node, args);
 
-    // apply options
-    if(options.name) story_node.name = options.name;
+    if(options) {
+      node.options = _.overlay({}, node.options, options);
+    }
 
-    return story_node;
+    return node;
   }
 });
 
-Story.Node = _layer.defineClass(Story.Node, null, {
+Story.Node = _.defineClass(Story.Node, null, {
   update: function() { return false; },
   setup: function() { },
   teardown: function() { },
@@ -268,3 +189,5 @@ Story.Node = _layer.defineClass(Story.Node, null, {
   },
   type: 'node'
 });
+
+// vim: set sw=2 ts=2 expandtab :

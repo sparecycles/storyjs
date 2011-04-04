@@ -2,6 +2,8 @@
 !!!5
 %html
   %head
+    %title
+      = yield :title
     - @inline_javascript = false
     - %w[ jquery-1.5.1 jquery-1.5.1-hack json2 md5 ].each do |js|
       - if @inline_javascript

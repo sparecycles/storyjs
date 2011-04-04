@@ -5,7 +5,7 @@
   .dialog-template
     .dialog
       .title
-        .title-content
+        %span.title-content
       .dialog-content
       .dialog-buttons
         %button.button .label
@@ -71,37 +71,40 @@
       }
     });
 
-    Dialog = _layer.defineClass(function(type, content, buttons, handler) {
-      var self = this;
-      var model = new MVC(_.overlay({}, content, {
-        type: type,
-        dialog: {
-          self: self,
-          buttons: buttons,
-          handler: function(arg) { 
-            var result = !handler || handler.call(this.arg);
-            if(result || undefined === result) {
-              this.close();
+    Dialog = _.Class({ 
+      init: function(type, content, buttons, handler) {
+        var self = this;
+        var model = new MVC(_.overlay({}, content, {
+          type: type,
+          dialog: {
+            self: self,
+            buttons: buttons,
+            handler: function(arg) { 
+              var result = !handler || handler.call(this.arg);
+              if(result || undefined === result) {
+                this.close();
+              }
             }
           }
-        }
-      }));
-      this.data = model.data;
-      this.template = $("<div/>").appendTo($('body')).template(model, {
-        '.' : {
-          $template: '.type'
-        }
-      });
-    }, null, {
-      is_open: function() {
-        return this.hasOwnProperty('template');
+        }));
+        this.data = model.data;
+        this.template = $("<div/>").appendTo($('body')).template(model, {
+          '.' : {
+            $template: '.type'
+          }
+        });
       },
-      close: function() {
-        if(this.hasOwnProperty('template')) {
-          this.template.clearTemplate().remove();
-          delete this.template;
+      proto: {
+        is_open: function() {
+          return this.hasOwnProperty('template');
+        },
+        close: function() {
+          if(this.hasOwnProperty('template')) {
+            this.template.clearTemplate().remove();
+            delete this.template;
+          }
+          delete this.data;
         }
-        delete this.data;
       }
     });
 

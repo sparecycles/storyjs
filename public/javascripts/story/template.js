@@ -1,15 +1,13 @@
 Template = _layer.defineClass(function Template(self, action) {
   var args = __args();
 
-  this.nodes = [];
   this.destructors = [];
   this.placeholders = [];
   this.children = [];
   this.inserted = [];
-  this.mvc = Template.render_context().mvc;
+  this.mvc = Template.render_context.mvc;
   var template_context = _.overlay({}, Template.context());
   template_context.render_context = this;
-  //Object.freeze(template_context);
 
   if(action) this.action = function() {
     this.context = Object.create(template_context);
@@ -40,7 +38,6 @@ Template = _layer.defineClass(function Template(self, action) {
     _.each(this.inserted, function(node) {
       node.remove();
     });
-    this.nodes = [];
     this.inserted = [];
     this.destructors = [];
     this.placeholders = [];
@@ -52,39 +49,31 @@ Template = _layer.defineClass(function Template(self, action) {
     return this.render();
   },
   render: function() {
-    this.parent = Template.render_context();
+    this.parent = Template.render_context;
     if(this.parent) this.parent.children.push(this);
 
-    try {
-      Template.render_context_stack.push(this);
-      Template.render_context().mvc.save_access_scope();
-      return this.action();
-    } catch(ex) {
-      console.warn('error rendering: %o', ex.stack);
-      debugger;
-    } finally {
-      var scope = Template.render_context().mvc.restore_access_scope();
-
+    return _.local.call(Template, {render_context: this}, function() {
       try {
-        this.mvc_listener_id = Template.render_context().mvc.register(this, scope);
+        Template.render_context.mvc.save_access_scope();
+        return this.action();
       } catch(ex) {
-        alert(ex.message);
+        console.warn('error rendering: %o', ex.stack);
+      } finally {
+        var scope = Template.render_context.mvc.restore_access_scope();
+        try {
+          this.mvc_listener_id = Template.render_context.mvc.register(this, scope);
+        } catch(ex) {
+          alert(ex.message);
+        }
       }
-
-      return Template.pop_render_context();
-    }
+    }).call(this);
   }
 });
-
-Template.pop_render_context = function() {
-  Template.render_context_stack.pop();
-}
 
 Template.RootRenderContext = function(mvc, map) {
   var self = Object.create(Template.prototype);
   self.children = [];
   self.mvc = mvc;
-  self.nodes = [];
   self.destructors = [];
   self.placeholders = [];
   self.inserted = [];
@@ -98,7 +87,7 @@ Template.RootRenderContext = function(mvc, map) {
 
 Template.opt = function(self, action) {
   // Tuneable space v.s. size tradeoffs =)
-  if(false && Template.render_context_stack > 16) {
+  if(false) {
     action.apply(self, __args());
   } else {
     Template.apply(null, arguments);
@@ -106,37 +95,26 @@ Template.opt = function(self, action) {
 };
 
 Template.inserted = function(node) {
-  var rc = Template.render_context();
+  var rc = Template.render_context;
   rc.inserted.push(node);
-  rc.nodes.push(node);
   return node;
 };
 
 Template.teardown = function(teardown) {
-  Template.render_context().destructors.push(teardown);
+  Template.render_context.destructors.push(teardown);
 };
 
 Template.remove = function(node, name) {
   var placeholder = Template.inserted($(document.createComment((name||'template') + ' placeholder')).insertAfter(node));
-  _.each(Template.render_context_stack, function(rcontext) {
-    rcontext.nodes = _.map(rcontext.nodes, function(remembered) {
-      if(remembered[0] === node[0]) throw 'reject';
-      return remembered;
-    });
-  });
-  Template.render_context().placeholders.push(placeholder);
+  Template.render_context.placeholders.push(placeholder);
   placeholder.data('node', node);
   node.detach();
   return placeholder;
 };
 
-Template.render_context_stack = [];
+Template.render_context = null;
 
-Template.render_context = function() {
-  return Template.render_context_stack.slice(-1)[0];
-}
-
-Template.context = function() { return Template.render_context().context; }
+Template.context = function() { return Template.render_context.context; }
 
 Template.scope = function(scope) {
   var context = Template.context();
@@ -241,8 +219,7 @@ Template.coalesce = function() {
 }
 
 Template.render = function() {
-  Template.render_context().self = this;
-  Template.render_context().nodes.push(this);
+  Template.render_context.self = this;
 
   if(Template.context().map.$each) {
     var _each = Template.context().map.$each;
@@ -571,15 +548,12 @@ jQuery.template = function(node, mvc, map) {
   if(old_context) { old_context.clear(); }
   var root_context = 
     new Template.RootRenderContext(mvc, _.deepfreeze(map || {}))
-  Template.render_context_stack.push(root_context);
   $node.data('template_context', root_context);
-  try {
+  _.local.call(Template, { render_context: root_context }, function() {
     Template(node, function() {
       Template.render.call(this);
     });
-  } finally {
-    return Template.pop_render_context();
-  }
+  }).call(this);
 }
 
 // vim: set sw=2 ts=2 expandtab :

@@ -58,9 +58,6 @@ Story.DefineNode('Sequence', function() {
   this.steps = [];
   this.index = -1;
   var args = __args();
-  if(args[0] instanceof Story.Options) {
-    args.shift().applyTo(this);
-  }
   _.each.call(this, args, function(node) {
     if(node instanceof Array) {
       node = Story.Build(Story.Group, node);
@@ -105,7 +102,7 @@ Story.DefineNode('Sequence', function() {
   restart: function() {
     return this.select(0);
   }
-});
+}, { owns_scope: true });
 
 Story.DefineNode('Ignore', function() {
   this.steps = [];
@@ -219,6 +216,42 @@ Story.DefineNode('Switch', function(states) {
       this.state = state;
       this.current_task = Story.setup(next_task);
     }
+  }
+});
+
+Story.DefineNode('Live', function(interval) {
+  this.interval = interval;
+  this.node = Story.register(this, Story.Build(Story.Group, __args()));
+}, {
+  setup: function() {
+    var story = this.scope.story;
+    this.handle = setInterval(function() { story.update(); }, this.interval);
+    this.content = Story.setup(this.node);
+  },
+  update: function() {
+    return Story.update(this.content);
+  },
+  teardown: function() {
+    Story.teardown(this.content);
+    clearInterval(this.handle);
+  }
+});
+
+Story.DefineNode('Delay', function(ms) {
+  this.delay = ms;
+}, {
+  setup: function() {
+    var self = this;
+    this.timeout = setTimeout(function() {
+      self.done = true; 
+      self.scope.story.update(); 
+    }, this.delay);
+  },
+  teardown: function() {
+    clearTimeout(this.timeout);
+  },
+  update: function() {
+    return !this.done;
   }
 });
 

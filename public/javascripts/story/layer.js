@@ -339,57 +339,81 @@ _.profile = function(name, fn) {
   }
 }
 
-new function() {
-  _.noop = function() {};
-  _.del = function(prop) { delete this[prop]; };
-  _.erase = {};
+_.noop = function() {};
 
-  var klasses = [];
+_.Class = function(options) {
+  return _.defineClass(options.init, options.base, options.proto, options.statik);
+}
 
-  _.defineClass = function(klass, base, proto) {
-    function Class() {
-      var self = this;
-      if(!(self instanceof klass)) {
-        self = Object.create(klass.prototype);
-      }
-      if(base) base.apply(self, arguments);
-      var result = klass.apply(self, arguments);
-      if(result && result instanceof Object) return result;
-      return self;
-    }
+_.defineClass = function(klass, base, proto, statik) {
+  var name = ((proto || {})._ || {}).name || klass.name;
+  var Class = Function('klass', 'base', _.evil_format(
+    "return function %{name}() {                             " +
+    "  var self = this;                                      " +
+    "  if(!(self instanceof klass)) {                        " +
+    "    self = Object.create(klass.prototype);              " +
+    "  }                                                     " +
+    (base ? "  if(base) base.apply(self, arguments);                 " : "") +
+    "  var result = klass.apply(self, arguments);            " +
+    "  if(result && result instanceof Object) return result; " +
+    "  return self;                                          " +
+    "};"
+  , { name: name }))(klass, base);
 
-    try {
-      Class.prototype 
-        = klass.prototype 
-        = Object.create((base || Object).prototype);
-    } catch(ex) {
-      debugger;
-    }
-    klass.prototype.constructor = klass;
-    _.overlay(klass.prototype, proto);
-    klass.__proto__ = Class;
-
-    klasses.push(Class);
-    Class.toString = klass.toString.bind(klass);
-    return Class;
-  };
-
-  _.deprecated = function(name, message) {
-    try { throw new Error(); }
-    catch(error) {
-      console.warn('%o is deprecated (%o) %o',
-        name,
-        message,
-        error.stack
-      );
-      debugger;
-    }
+  try {
+    Class.prototype 
+      = klass.prototype 
+      = Object.create((base || Object).prototype);
+  } catch(ex) {
+    debugger;
   }
 
-  _.linkClasses = function() {
-    _.deprecated('linkClasses', 'classes link at definition');
-  };
-}();
+  klass.prototype.constructor = klass;
+  _.overlay(klass.prototype, proto);
+  klass.__proto__ = Class;
+
+  Class.toString = _.constant("function " + name + "(...) { ... }");
+  if(statik) {
+    _.overlay(Class, statik);
+    _.overlay(klass, statik);
+  }
+  return Class;
+};
+
+_.deprecated = function(name, message) {
+  try { throw new Error(); }
+  catch(error) {
+    console.warn('%o is deprecated (%o) %o',
+      name,
+      message,
+      error.stack
+    );
+    debugger;
+  }
+};
+
+_.local = function(data, func) {
+  if(arguments.length < 2) data = {};
+  var global = this;
+  return function() {
+    var backup = {};
+    var undef = {};
+    try {
+      for(var key in data) try { 
+        backup[key] = Object.prototype.hasOwnProperty.call(global, key) 
+          ? global[key]
+          : undef;
+        global[key] = data[key];
+      } catch(ex) {}
+      return func.apply(this, arguments);
+    } finally {
+      for(var key in backup) try {
+        if(backup[key] === undef) delete global[key];
+        else global[key]= backup[key];
+      } catch(ex) {}
+    }
+  }
+}
 
 _.join = function(thing, how) {
   if(!thing || !(thing instanceof Object)) return thing;
@@ -409,5 +433,16 @@ _.join = function(thing, how) {
     return serial.join(qmortar);
   }
 }
+
+_.evil_format = function(format, args) {
+  return format.replace(/%{([^}]*)}/g, function(match, key) {
+    return Object.prototype.hasOwnProperty.call(args, key) ? String(args[key]) : '';
+  });
+};
+
+_.evil = function(format, args) {
+  var code = _.evil_format(format, args);
+  return eval(code);
+};
 
 // vim: set sw=2 ts=2 expandtab :
