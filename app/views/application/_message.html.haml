@@ -31,28 +31,31 @@
       }
     });
 
-    Message = _layer.defineClass(function(content) {
-      var self = this;
-      var model = new MVC({
-        message: content,
-      });
-      this.data = model.data;
-      this.template = $("<div/>").appendTo($('body')).template(model, {
-        '.' : {
-          $template: '=message-template',
-          '...message' : '.message'
+    Message = _layer.Class({
+      init: function(content) {
+        var self = this;
+        var model = new MVC({
+          message: content,
+        });
+        this.data = model.data;
+        this.template = $("<div/>").appendTo($('body')).template(model, {
+          '.' : {
+            $template: '=message-template',
+            '...message' : '.message'
+          }
+        });
+      }, 
+      proto: {
+        is_open: function() {
+          return this.hasOwnProperty('template');
+        },
+        close: function() {
+          if(this.hasOwnProperty('template')) {
+            this.template.clearTemplate().remove();
+            delete this.template;
+          }
+          delete this.data;
         }
-      });
-    }, null, {
-      is_open: function() {
-        return this.hasOwnProperty('template');
-      },
-      close: function() {
-        if(this.hasOwnProperty('template')) {
-          this.template.clearTemplate().remove();
-          delete this.template;
-        }
-        delete this.data;
       }
     });
 

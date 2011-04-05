@@ -7,32 +7,42 @@ Story = _.Class({
       return new Story.Telling(this.story, scope);
     }
   },
-  statik: {
-    Bind: function(fn) {
+  classic: {
+    callback: function(fn) {
       var args = __args();
-      var instance = Story.Node.active_instance;
-      return function() {
-        return Story.Node.with_activation.apply(null, [instance, fn].concat(args).concat(__args()));
-      };
+      var instance = Story.Telling.active_instance;
+      var story = instance.scope.story;
+      if(typeof fn === 'string') fn = instance[fn];
+      return _.local.call(Story.Telling, {active_instance: instance}, function() {
+        try {
+          return fn.apply(instance, args.concat(__args()));
+        } finally {
+          story.update();
+        }
+      });
     },
     Node: _.Class({
       init: function() {
-        this.children = [];
-        this.options = {};
+        this.story = {
+          options: {}
+        };
       },
       proto: {
         update: function() { return false; },
         setup: function() { },
         teardown: function() { },
         handle: function(arg) { },
-        Options: function(opts) { _.overlay(this.options, opts); return this; },
-        type: 'node',
+        Options: function(opts) { _.overlay(this.story.options, opts); return this; },
+        type: 'node'
       },
-      statik: {
+      classic: {
         Define: function(name, init, prototype, options) {
           // use eval to build function which has a decent name.
           Story[name] = _.Class({ 
-            init: init,
+            init: function() { 
+              if(options) this.Options(options); 
+              init.apply(this, arguments); 
+            },
             base: Story.Node,
             proto: _.overlay({}, prototype, { type: name })
           });
@@ -41,17 +51,19 @@ Story = _.Class({
           var success = false;
           return Story.Node.instance_call(instance, 'update');
         },
-        instance_call: function(instance, action) {
-          return this.with_activation.apply(null, [instance, instance[action]].concat(__args()));
+        with_activation: function(instance, action) {
+          return Story.Node.instance_call.apply(this, arguments);
         },
-        with_activation: function(instance, fn) {
-          return _.local.call(Story.Node, {active_instance: instance}, fn).apply(instance, __args());
+        instance_call: function(instance, action) {
+          return _.local.call(Story.Telling, {active_instance: instance}, 
+            typeof action === 'string' ? instance[action] : action
+          ).apply(instance, __args());
         },
         setup: function(node) {
           if(!node) { debugger; return null; }
           var instance = Object.create(node);
-          instance.parent = Story.Node.active_instance;
-          if(node.options.owns_scope) {
+          instance.parent = Story.Telling.active_instance;
+          if(node.story.options.owns_scope) {
             instance.scope = Object.create(instance.parent.scope);
           } else {
             instance.scope = instance.parent.scope; 
@@ -70,7 +82,6 @@ Story = _.Class({
             node = new Story.Action(node);
           }
           node.parent = parent;
-          parent.children.push(node);
           return node;
         },
         Build: function(DefaultType, list) {
@@ -79,8 +90,8 @@ Story = _.Class({
             return Story.Node.Build(Story[list[0].slice(1)], list.slice(1));
           case '@':
             var subgroup = Story.Node.Build(DefaultType, list.slice(1));
-            subgroup.options.name = list[0].slice(1);
-            subgroup.options.owns_scope = true;
+            subgroup.story.options.name = list[0].slice(1);
+            subgroup.story.options.owns_scope = true;
             return subgroup;
           default:
             // fall out
@@ -109,7 +120,7 @@ Story = _.Class({
             return Story.Node.handle(this.instance, arg);
           }
         },
-        stop: function(arg) { 
+        stop: function() { 
           if(!this.instance) return false;
 
           try {
@@ -118,28 +129,20 @@ Story = _.Class({
             delete this.instance;
           }
         }
-      },
-      statik: {
-        read: function(scope, key) {
-          return this.scope(scope)[key];
-        },
-        write: function(scope, key, value) {
-          return this.scope(scope)[key] = value;
-        },
-        scope: function(name) {
-          if(name == '.') return Story.Node.active_instance.scope;
-          var node = Story.Telling.find(name);
-          return node ? node.scope : null;
-        },
-        find: function(name) {
-          var root = Story.Node.active_instance;
-          while(root.parent && root.options.name != name) {
-            root = root.parent;
-          }
-          return root;
-        }
       }
-    })
+    }),
+    find: function(name) {
+      var root = Story.Telling.active_instance;
+      while(root.parent && root.story.options.name != name) {
+        root = root.parent;
+      }
+      return root;
+    },
+    scope: function(name) {
+      if(name == '.') return Story.Telling.active_instance.scope;
+      var node = Story.find(name);
+      return node ? node.scope : null;
+    }
   }
 });
 

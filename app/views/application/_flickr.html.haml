@@ -41,14 +41,14 @@
           dataType: 'jsonp',
           jsonp: false,
           jsonpCallback: 'jsonFlickrApi',
-          success: Story.Bind(function(data, status) {
+          success: Story.callback(function(data, status) {
             this.xhr.abort();
-            Story.Telling.scope(this.target).data = data;
-            Story.Telling.scope(this.target).result = status;
+            Story.scope(this.target).data = data;
+            Story.scope(this.target).result = status;
             this.done = true;
             this.scope.story.update();
           }),
-          error: Story.Bind(function(xhr, status) {
+          error: Story.callback(function(xhr, status) {
             debugger;
             Story.Telling.scope(this.target).result = status;
             this.done = true;

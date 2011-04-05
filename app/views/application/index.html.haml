@@ -82,7 +82,7 @@
                 ]]
               })
             ]
-          ],
+          ]
         ]}
       ]),
       Story.Switch({
@@ -102,7 +102,7 @@
                }, Story.Delay(500), function() { this.scope.dialog.close(); }
             ] },
             { label : 'whoops', action: function() {
-              Story.Telling.find('testdialog').restart();
+              Story.find('testdialog').restart();
             } },
             { label: 'test', action: Story.Dialog('basic-dialog', {
                 title: 'Inner Dialog',

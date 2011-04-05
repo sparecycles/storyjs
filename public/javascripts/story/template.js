@@ -1,72 +1,75 @@
-Template = _layer.defineClass(function Template(self, action) {
-  var args = __args();
+Template = _.Class({
+  init: function Template(self, action) {
+    var args = __args();
 
-  this.destructors = [];
-  this.placeholders = [];
-  this.children = [];
-  this.inserted = [];
-  this.mvc = Template.render_context.mvc;
-  var template_context = _.overlay({}, Template.context());
-  template_context.render_context = this;
-
-  if(action) this.action = function() {
-    this.context = Object.create(template_context);
-    this.context.map = Object.create(template_context.map);
-    return action.apply(self, args);
-  };
-
-  return this.render();
-}, null, {
-  clear: function() {
-    _.each(this.children, function(child) {
-      child.clear();
-    });
-    _.each(this.placeholders, function(placeholder) {
-      var placeholder_node = placeholder.data('node');
-      placeholder.data('node', 0);
-      if(placeholder_node) {
-        placeholder_node.insertBefore(placeholder);
-        //if(placeholder_node.closest('html').length == 0) {
-        //  placeholder_node.remove();
-        //}
-        placeholder.remove();
-      } else { debugger; }
-    });
-    _.each.call(this, this.destructors, function(destructor) {
-      destructor.call(this, this.self);
-    });
-    _.each(this.inserted, function(node) {
-      node.remove();
-    });
-    this.inserted = [];
     this.destructors = [];
     this.placeholders = [];
     this.children = [];
-    this.mvc.clear(this.mvc_listener_id);
-  },
-  update: function() {
-    this.clear();
+    this.inserted = [];
+    this.mvc = Template.render_context.mvc;
+    var template_context = _.overlay({}, Template.context());
+    template_context.render_context = this;
+
+    if(action) this.action = function() {
+      this.context = Object.create(template_context);
+      this.context.map = Object.create(template_context.map);
+      return action.apply(self, args);
+    };
+
     return this.render();
   },
-  render: function() {
-    this.parent = Template.render_context;
-    if(this.parent) this.parent.children.push(this);
+  proto: {
+    clear: function() {
+      _.each(this.children, function(child) {
+        child.clear();
+      });
+      _.each(this.placeholders, function(placeholder) {
+        var placeholder_node = placeholder.data('node');
+        placeholder.data('node', 0);
+        if(placeholder_node) {
+          placeholder_node.insertBefore(placeholder);
+          //if(placeholder_node.closest('html').length == 0) {
+          //  placeholder_node.remove();
+          //}
+          placeholder.remove();
+        } else { debugger; }
+      });
+      _.each.call(this, this.destructors, function(destructor) {
+        destructor.call(this, this.self);
+      });
+      _.each(this.inserted, function(node) {
+        node.remove();
+      });
+      this.inserted = [];
+      this.destructors = [];
+      this.placeholders = [];
+      this.children = [];
+      this.mvc.clear(this.mvc_listener_id);
+    },
+    update: function() {
+      this.clear();
+      return this.render();
+    },
+    render: function() {
+      this.parent = Template.render_context;
+      if(this.parent) this.parent.children.push(this);
 
-    return _.local.call(Template, {render_context: this}, function() {
-      try {
-        Template.render_context.mvc.save_access_scope();
-        return this.action();
-      } catch(ex) {
-        console.warn('error rendering: %o', ex.stack);
-      } finally {
-        var scope = Template.render_context.mvc.restore_access_scope();
+      return _.local.call(Template, {render_context: this}, function() {
         try {
-          this.mvc_listener_id = Template.render_context.mvc.register(this, scope);
+          Template.render_context.mvc.save_access_scope();
+          return this.action();
         } catch(ex) {
-          alert(ex.message);
+          console.warn('error rendering: %o', ex.stack);
+        } finally {
+          var scope = Template.render_context.mvc.restore_access_scope();
+          try {
+            this.mvc_listener_id = Template.render_context.mvc.register(this, scope);
+          } catch(ex) {
+            alert(ex.message);
+          }
         }
-      }
-    }).call(this);
+      }).call(this);
+    }
   }
 });
 
@@ -80,7 +83,7 @@ Template.RootRenderContext = function(mvc, map) {
   self.context = {
     data: mvc.data,
     map: map,
-    scope: {} 
+    scope: { '#context': mvc.data } 
   };
   return self;
 };
@@ -104,6 +107,18 @@ Template.teardown = function(teardown) {
   Template.render_context.destructors.push(teardown);
 };
 
+Template.css = function(elem, style) {
+  $(elem).each(function() {
+    Template.teardown.call(this, function(css) {
+      $(this).css(css);
+    }, _.map.call($(this), style, function(v, key) {
+      return this.css(key);
+    }));
+
+    $(this).css(style);
+  });
+};
+
 Template.remove = function(node, name) {
   var placeholder = Template.inserted($(document.createComment((name||'template') + ' placeholder')).insertAfter(node));
   Template.render_context.placeholders.push(placeholder);
@@ -114,7 +129,25 @@ Template.remove = function(node, name) {
 
 Template.render_context = null;
 
-Template.context = function() { return Template.render_context.context; }
+Template.render_or_action_context = function() {
+  return Template.render_context || Template.action_context;
+}
+
+Template.context = function() { 
+  return Template.render_or_action_context().context; 
+}
+
+Template.Callback = function(fn) {
+  return _.local.call(Template, { action_context: {
+    self: Template.render_context.self,
+    mvc: Template.render_context.mvc,
+    context: {
+      scope: Template.render_context.context.scope,
+      map: Template.render_context.context.map,
+      data: Template.render_context.context.data
+    }
+  } }, function() { return fn.apply(this, args.concat(__args())); });
+}
 
 Template.scope = function(scope) {
   var context = Template.context();
@@ -141,8 +174,20 @@ Template.access = function(path) {
 };
 
 Template.navigate = function(path) {
-  var context = Template.context();
+  var navi = Template.navigate_(path, Template.context());
+  return navi[0](navi[1]);
+}
 
+Template.update = function(path, value) {
+  var navi = Template.navigate_(path, Template.context());
+  if(arguments.length > 1) {
+    return navi[0](navi[1], value);
+  } else {
+    return navi[0](navi[1], navi[0](navi[1])());
+  }
+};
+
+Template.navigate_ = function(path, context) {
   while(typeof path === 'string' && path.slice(0,3) == '...') {
     context = context.parent;
     path = context.map[path];
@@ -151,38 +196,47 @@ Template.navigate = function(path) {
   if(!path) return undefined;
 
   if(typeof path === 'function') {
-    return path.call(context.render_context.self);
+    return [ function() { return path.call(context.render_context.self); }, null ];
   }
 
   if(path === '.') {
-    return Template.context().data;
+    path = '#context';
   }
 
-  // "a[b[c]][d[e].f].g].h" -->
-  // ['a', [ 'b', ['c'], [ 'd', [ 'e' ], '.f' ], '.g' ], '.h' ]
+  // "a.x[b[c]][d[e].f.g].h]" -->
+  // ['a', [ 'b', ['c'], [ 'd', [ 'e' ], '.f.g' ], '.h' ] ]
   // 
   // split '[' -->
-  // 'a', 'b', 'c]', 'd', 'e].f].g].h'
+  // 'a.x', 'b', 'c]', 'd', 'e].f.g].h]'
   // each... split ']' with stack up/down navigation -->
-  // ['a', [ 'b', ['c'], [ 'd', [ 'e' ], '.f' ], '.g' ], '.h' ]
+  // ['a', 'x', [ 'b', ['c'], [ 'd', [ 'e' ], 'f', 'g' ], 'h' ] ]
   var tree = [];
   _.each.call([], path.split('['), function(left_part) {
     var chain = left_part.split(']'),
-        subtree = [chain[0]];
+        part0 = chain[0].slice(0,1) == '.' 
+          ? '#context' + chain[0] 
+          : chain[0],
+        subtree = part0.slice(0,1) == '=' ? [part0] : part0.split('.');
     tree.push(subtree); this.push(tree); tree = subtree;
     _.each.call(this, chain.slice(1), function(right_part) {
       tree = this.pop();
-      if(right_part.length) tree.push.apply(tree, right_part);
+      if(right_part.length) { 
+        if(right_part.slice(0,1) != '.') debugger;
+        tree.push.apply(tree, right_part.slice(1).split('.'));
+      }
     });
   });
 
-  return eval(tree);
+  return [
+    _eval(tree.slice(0,-1)),
+    _eval_part(tree.slice(-1)[0])
+  ];
 
-  function primitive(path, context) {
+  function primitive(path) {
     if(path.slice(0,1) == '.') {
       return context.data(path.slice(1));
     } else if(path.slice(0,1) == '=') {
-      return MVC.constant(path.slice(1));
+      return MVC.constant(Template.expand(path.slice(1)));
     } else {
       //return context.scope[path];
       var first_part = path.split('.', 1)[0];
@@ -193,19 +247,24 @@ Template.navigate = function(path) {
     }
   };
 
-  function eval(tree) {
-    var base = primitive(tree[0], context);
-    
+  function _eval_part(part) {
+    if(part instanceof Array) {
+      return _eval(part)();
+    } else {
+      return part;
+    }
+  }
+
+  function _eval(tree) {
+    if(tree.length == 0) return primitive;
+    var base = primitive(tree[0]);
     _.each(tree.slice(1), function(part) {
-      if(part instanceof Array) {
-        base = base(eval(part)());
-      } else {
-        base = base(part);
-      }
+      var evaluated = _eval_part(part);
+      base = base(evaluated);
     });
     return base;
   }
-};
+}
 
 Template.coalesce = function() {
   return (function(args) { 
@@ -222,9 +281,9 @@ Template.render = function() {
   Template.render_context.self = this;
 
   if(Template.context().map.$each) {
-    var _each = Template.context().map.$each;
-    var key = _.keys(_each)[0];
-    var value = _each[key];
+    var $each = Template.context().map.$each;
+    var key = _.keys($each)[0];
+    var value = $each[key];
 
     Template.context().map.$each = undefined;
     
@@ -260,6 +319,7 @@ Template.render = function() {
         Template(this, function() {
           var $this = $(this);
           Template.context().data = list(index)();
+          Template.scope({'#context': Template.context().data});
           Template.render.call(
             Template.inserted($this.clone().insertBefore($this))
           );
@@ -287,9 +347,11 @@ Template.render = function() {
   if(Template.context().map.$in) {
     if(typeof Template.context().map.$in === 'function') {
       Template.context().data = Template.context().map.$in.call(this);
+      Template.scope({'#context': Template.context().data});
       if(typeof Template.context().data != 'function') debugger;
     } else {
       Template.context().data = Template.navigate(Template.context().map.$in);
+      Template.scope({'#context': Template.context().data});
     }
     Template.context().map.$in = undefined;
   }
@@ -367,6 +429,7 @@ Template.render = function() {
               var template = $(this).data('template');
               Template.context().map = Object.create(template.map);
               Template.context().data = template.data;
+              Template.scope({'#context': Template.context().data});
               Template.render.call($(this));
             });
           }));
@@ -554,6 +617,12 @@ jQuery.template = function(node, mvc, map) {
       Template.render.call(this);
     });
   }).call(this);
+}
+
+Template.expand = function(x) {
+  return x.replace(/%{([^}]*)}/g, function(match, key) {
+    return Template.access(key);
+  });
 }
 
 // vim: set sw=2 ts=2 expandtab :

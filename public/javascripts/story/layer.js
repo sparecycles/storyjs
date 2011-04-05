@@ -342,7 +342,7 @@ _.profile = function(name, fn) {
 _.noop = function() {};
 
 _.Class = function(options) {
-  return _.defineClass(options.init || function(){}, options.base, options.proto, options.statik);
+  return _.defineClass(options.init || function(){}, options.base, options.proto, options.classic);
 }
 
 _.defineClass = function(klass, base, proto, statik) {
