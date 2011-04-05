@@ -108,7 +108,7 @@
       }
     });
 
-    Story.DefineNode('Dialog', function() {
+    Story.Node.Define('Dialog', function() {
       var args = __args();
       // maybe reprocess button into story nodes.
       args[2] = _.map.call(this, args[2], function(button) {
@@ -117,10 +117,10 @@
           if(typeof action === 'function') {
             return action;
           } else if(action instanceof Array) {
-            var node = Story.Build(Story.Sequence, action);
-            return Story.register(this, node);
+            var node = Story.Node.Build(Story.Sequence, action);
+            return Story.Node.register(this, node);
           } else if(action instanceof Story.Node) {
-            return Story.register(this, action);
+            return Story.Node.register(this, action);
           } else {
             return function() {
               this.parent.scope.result = action;
@@ -137,14 +137,14 @@
         var handler = dialog.data('dialog.handler')();
         dialog.data('dialog.handler', function(arg) {
           if(!(arg instanceof Story.Node)) {
-            var result = Story.with_activation(instance, arg);
+            var result = Story.Node.with_activation(instance, arg);
             if(result !== false) dialog.close();
           } else {
             if(instance.button_node) {
-              Story.teardown(instance.button_node);
+              Story.Node.teardown(instance.button_node);
             }
-            instance.button_node = Story.with_activation(instance, function() { 
-              return Story.setup(arg);
+            instance.button_node = Story.Node.with_activation(instance, function() { 
+              return Story.Node.setup(arg);
             });
           }
           instance.scope.story.update();
@@ -157,19 +157,19 @@
       },
       update: function() {
         if(this.button_node) {
-          Story.update(this.button_node);
+          Story.Node.update(this.button_node);
         }
         return this.dialog.is_open();
       },
       teardown: function() {
         if(this.button_node) {
-          Story.teardown(this.button_node);
+          Story.Node.teardown(this.button_node);
         }
         if(this.dialog.is_open()) {
           this.dialog.close();
         }
       }
-    });
+    }, { owns_scope: true });
 
 - content_for :template do
   .basic-dialog

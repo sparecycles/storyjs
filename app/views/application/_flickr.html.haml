@@ -22,15 +22,14 @@
       querys.push('api_sig=' + api_sig);
       return querys.join('&');
     }
-    Story.DefineNode('Flickr', function(target, method, data, options) {
-      this.options = options;
+    Story.Node.Define('Flickr', function(target, method, data, options) {
+      this.ajax_options = options;
       this.target = target;
       this.data = data;
       this.method = method;
     }, {
       setup: function() {
         if(typeof this.data === 'function') this.data = this.data.call(this);
-
 
         this.xhr = jQuery.ajax(_.overlay({ 
           cache: true,
@@ -42,21 +41,21 @@
           dataType: 'jsonp',
           jsonp: false,
           jsonpCallback: 'jsonFlickrApi',
-          success: function(data, status) {
+          success: Story.Bind(function(data, status) {
             this.xhr.abort();
-            StoryTelling.findScope(this, this.target).data = data;
-            StoryTelling.findScope(this, this.target).result = status;
+            Story.Telling.scope(this.target).data = data;
+            Story.Telling.scope(this.target).result = status;
             this.done = true;
             this.scope.story.update();
-          }.bind(this),
-          error: function(xhr, status) {
-            StoryTelling.findScope(this, this.target).result = status;
+          }),
+          error: Story.Bind(function(xhr, status) {
+            debugger;
+            Story.Telling.scope(this.target).result = status;
             this.done = true;
             this.scope.story.update();
-          }.bind(this),
-          //jsonpCallback: this.callbackname,
+          }),
           timeout: 1000*10
-        }, this.options || {}));
+        }, this.ajax_options || {}));
       },
       update: function() {
         return !this.done;

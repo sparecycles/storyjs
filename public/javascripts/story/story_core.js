@@ -1,193 +1,146 @@
 Story = _.Class({
   init: function() {
-    this.story = Story.Build(Story.Group, __args());
+    this.story = Story.Node.Build(Story.Group, __args());
   }, 
   proto: {
     tell: function(scope) { 
-      var instance = Object.create(this.story);
-      instance.scope = Object.create(scope || {});
-      var telling = instance.scope.story = new StoryTelling(instance);
-      Story.instance_call(instance, 'setup');
-      return telling;
-    }
-  } 
-});
-
-StoryTelling = _.defineClass(function StoryTelling(instance) {
-  this.instance = instance;
-}, null, {
-  update: function() { return Story.update(this.instance); },
-  handle: function(arg) { return Story.handle(this.instance, arg); },
-  teardown: function(arg) { return Story.teardown(this.instance); }
-})
-
-StoryTelling.findScope = function(instance, name) {
-  while(instance && instance.options.name != name) instance = instance.parent;
-  return instance ? instance.scope : null;
-}
-
-Story.Tell = function(story) {
-}
-
-Story.active = function() {
-  return !!Story.active_instance;
-}
-
-_.overlay(Story, {
-  with_activation: function(instance, fn) {
-    return _.local.call(Story, {active_instance: instance}, function() { 
-      return fn.apply(instance, __args());
-    }).call(instance, __args());
-  },
-  instance_call: function(instance, action) {
-    return _.local.call(Story, {active_instance: instance}, 
-      instance[action]
-    ).apply(instance, __args());
-  },
-  setup: function(node) {
-    if(!node) return null;
-    var instance = new Story.Instance(node, Story.active_instance);
-    Story.instance_call(instance, 'setup');
-    instance.requests = [];
-    return instance;
-  },
-  teardown: function(instance) {
-    Story.instance_call(instance, 'teardown');
-  },
-  handle_requests: function(instance) {
-    var requests;
-    while(requests = instance.requests) {
-      if(requests.length == 0) break;
-      instance.requests = [];
-      _.each(requests, function(req) {
-        req.call(instance);
-      });
+      return new Story.Telling(this.story, scope);
     }
   },
-  update: function(instance) {
-    var success = false;
-    try {
-      var result = Story.instance_call(instance, 'update');
-      success = true;
-      return result;
-    } finally {
-      if(success) {
-        Story.handle_requests(instance);
-      }
-    }
-  },
-  handle: function(instance, arg) {
-    return Story.instance_call(instance, 'handle', arg);
-  },
-  Instance: function(node, parent) {
-    var instance = Object.create(node);
-    instance.parent = parent;
-    if(node.options.owns_scope) {
-      instance.scope = new Story.Scope(instance);
-    } else {
-      instance.scope = parent.scope;
-    }
-    return instance;
-  },
-  Scope: function(instance, parent) {
-    var proto = instance.parent ? instance.parent.scope : Object.prototype;
-    if(typeof proto != 'object') debugger;
-    var scope = Object.create(proto);
-    return scope;
-  },
-  register: function(parent, node) {
-    if(!(node instanceof Story.Node)) {
-      node = new Story.Action(node);
-    }
-    node.parent = parent;
-    parent.children.push(node);
-    return node;
-  },
-  Node: function() { 
-  },
-  Options: function(options) {
-    var self = this;
-    if(this.constructor != Story.Options) self = new Story.Options();
-    self.options = options;
-    return self;
-  },
-  DefineNode: function(name, init, prototype, options) {
-    // use eval to build function which has a decent name.
-    Function('init', 'Story', 'options', _.evil_format(
-      "Story.%{name} = function Story_%{name}() {                " + 
-      "  var self = this.constructor == Story.%{name}            " +
-      "    ? this                                                " +
-      "    : Object.create(Story.%{name}.prototype);             " +
-      "  self.children = [];                                     " +
-      "  self.options = options;                                 " +
-      "  return Story.Options.construct(self, init, __args());   " +
-      "}                                                         "
-    , { name: name }))(init, Story, options || {});
-    Story[name] = _.defineClass(Story[name], Story.Node, prototype);
-  },
-  find: function(name) {
-    var root = Story.active_instance;
-    while(root.parent && root.name != name) {
-      root = root.parent;
-    }
-    return root;
-  },
-  Build: function(DefaultType, list) {
-    if(list.length > 0 && typeof list[0] === 'string') switch(list[0].slice(0,1)) {
-    case '#':
-      return Story.Build(Story[list[0].slice(1)], list.slice(1));
-    case '@':
-      var subgroup = Story.Build(DefaultType, list.slice(1));
-      subgroup.name = list[0].slice(1);
-      return subgroup;
-    default:
-      // fall out
-    }
-
-    return DefaultType.apply(null, list);
-  }
-});
-
-_.overlay(Story.Options, {
-  construct: function(node, init, args) {
-    var options = null;
-
-    if(args[0] instanceof Story.Options) {
-      options = args.shift().options;
-    }
-
-    init.apply(node, args);
-
-    if(options) {
-      node.options = _.overlay({}, node.options, options);
-    }
-
-    return node;
-  }
-});
-
-Story.Node = _.defineClass(Story.Node, null, {
-  update: function() { return false; },
-  setup: function() { },
-  teardown: function() { },
-  handle: function(arg) { },
-  please: function(action) {
-    var fn = action;
-    if(typeof fn === 'string') {
-      fn = this[fn];
-    }
-    if(typeof fn === 'function') {
-      if(!this.requests) this.requests = [];
+  statik: {
+    Bind: function(fn) {
       var args = __args();
-      this.requests.push(function() {
-        fn.apply(this, args);
-      });
-    } else {
-      console.log(this.constructor.name, "doesn't understand: ", action);
-      debugger;
-    }
-  },
-  type: 'node'
+      var instance = Story.Node.active_instance;
+      return function() {
+        return Story.Node.with_activation.apply(null, [instance, fn].concat(args).concat(__args()));
+      };
+    },
+    Node: _.Class({
+      init: function() {
+        this.children = [];
+        this.options = {};
+      },
+      proto: {
+        update: function() { return false; },
+        setup: function() { },
+        teardown: function() { },
+        handle: function(arg) { },
+        Options: function(opts) { _.overlay(this.options, opts); return this; },
+        type: 'node',
+      },
+      statik: {
+        Define: function(name, init, prototype, options) {
+          // use eval to build function which has a decent name.
+          Story[name] = _.Class({ 
+            init: init,
+            base: Story.Node,
+            proto: _.overlay({}, prototype, { type: name })
+          });
+        },
+        update: function(instance) {
+          var success = false;
+          return Story.Node.instance_call(instance, 'update');
+        },
+        instance_call: function(instance, action) {
+          return this.with_activation.apply(null, [instance, instance[action]].concat(__args()));
+        },
+        with_activation: function(instance, fn) {
+          return _.local.call(Story.Node, {active_instance: instance}, fn).apply(instance, __args());
+        },
+        setup: function(node) {
+          if(!node) { debugger; return null; }
+          var instance = Object.create(node);
+          instance.parent = Story.Node.active_instance;
+          if(node.options.owns_scope) {
+            instance.scope = Object.create(instance.parent.scope);
+          } else {
+            instance.scope = instance.parent.scope; 
+          }
+          Story.Node.instance_call(instance, 'setup');
+          return instance;
+        },
+        teardown: function(instance) {
+          Story.Node.instance_call(instance, 'teardown');
+        },
+        handle: function(instance, arg) {
+          return Story.Node.instance_call(instance, 'handle', arg);
+        },
+        register: function(parent, node) {
+          if(!(node instanceof Story.Node)) {
+            node = new Story.Action(node);
+          }
+          node.parent = parent;
+          parent.children.push(node);
+          return node;
+        },
+        Build: function(DefaultType, list) {
+          if(list.length > 0 && typeof list[0] === 'string') switch(list[0].slice(0,1)) {
+          case '#':
+            return Story.Node.Build(Story[list[0].slice(1)], list.slice(1));
+          case '@':
+            var subgroup = Story.Node.Build(DefaultType, list.slice(1));
+            subgroup.options.name = list[0].slice(1);
+            subgroup.options.owns_scope = true;
+            return subgroup;
+          default:
+            // fall out
+          }
+          return DefaultType.apply(null, list);
+        }
+      }
+    }),
+    Telling: _.Class({
+      init: function(story, scope) {
+        this.instance = Object.create(story);
+        this.instance.scope = Object.create(scope || {});
+        this.instance.scope.story = this;
+        Story.Node.instance_call(this.instance, 'setup');
+        this.update();
+      },
+      proto: {
+        update: function() { 
+          if(!this.instance) return false;
+          var result = Story.Node.update(this.instance);
+          if(!result) this.stop();
+          return result;
+        },
+        handle: function(arg) {
+          if(this.instance) {
+            return Story.Node.handle(this.instance, arg);
+          }
+        },
+        stop: function(arg) { 
+          if(!this.instance) return false;
+
+          try {
+            return Story.Node.teardown(this.instance);
+          } finally {
+            delete this.instance;
+          }
+        }
+      },
+      statik: {
+        read: function(scope, key) {
+          return this.scope(scope)[key];
+        },
+        write: function(scope, key, value) {
+          return this.scope(scope)[key] = value;
+        },
+        scope: function(name) {
+          if(name == '.') return Story.Node.active_instance.scope;
+          var node = Story.Telling.find(name);
+          return node ? node.scope : null;
+        },
+        find: function(name) {
+          var root = Story.Node.active_instance;
+          while(root.parent && root.options.name != name) {
+            root = root.parent;
+          }
+          return root;
+        }
+      }
+    })
+  }
 });
 
 // vim: set sw=2 ts=2 expandtab :

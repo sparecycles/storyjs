@@ -17,12 +17,12 @@
       }, [
         { label: 'ok',     action: 'ok'     },
         { label: 'cancel', action: 'cancel' },
-        { label: 'test A', action: Story.Sequence(Story.Options({owns_scope: false}), function() {
+        { label: 'test A', action: Story.Sequence(function() {
           alert('test was ' + this.scope.test); 
           this.scope.test = 'A'; 
         }, function() { 
           alert('test is ' + this.scope.test); 
-        })},
+        }).Options({owns_scope: false}) },
         { label: 'test B', action: Story.Sequence(function() { 
           alert('test was ' + this.scope.test);
           this.scope.test = 'B';
@@ -33,7 +33,7 @@
           [
             {
               setup: function() {
-                this.popup = this.parent.scope.popup = window.open('about:', 'authenticate', _.join({
+                this.popup = this.scope.popup = window.open('about:', 'authenticate', _.join({
                   width: 800,
                   height: 800,
                   screenX: 200,
@@ -102,9 +102,7 @@
                }, Story.Delay(500), function() { this.scope.dialog.close(); }
             ] },
             { label : 'whoops', action: function() {
-              Story.with_activation(Story.find('testdialog'), function() { 
-                this.restart(); 
-              }); 
+              Story.Telling.find('testdialog').restart();
             } },
             { label: 'test', action: Story.Dialog('basic-dialog', {
                 title: 'Inner Dialog',
@@ -115,7 +113,6 @@
         ]
       })
     ]);
-
     $('<button>dialog</button>')
     .click(function() {
       var story = DialogStory.tell();

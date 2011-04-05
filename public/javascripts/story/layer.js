@@ -342,11 +342,11 @@ _.profile = function(name, fn) {
 _.noop = function() {};
 
 _.Class = function(options) {
-  return _.defineClass(options.init, options.base, options.proto, options.statik);
+  return _.defineClass(options.init || function(){}, options.base, options.proto, options.statik);
 }
 
 _.defineClass = function(klass, base, proto, statik) {
-  var name = ((proto || {})._ || {}).name || klass.name;
+  var name = ((proto || {})._ || {}).name || (klass || function(){}).name;
   var Class = Function('klass', 'base', _.evil_format(
     "return function %{name}() {                             " +
     "  var self = this;                                      " +
@@ -369,7 +369,7 @@ _.defineClass = function(klass, base, proto, statik) {
   }
 
   klass.prototype.constructor = klass;
-  _.overlay(klass.prototype, proto);
+  _.overlay(klass.prototype, proto || {});
   klass.__proto__ = Class;
 
   Class.toString = _.constant("function " + name + "(...) { ... }");
