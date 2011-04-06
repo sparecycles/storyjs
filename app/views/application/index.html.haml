@@ -15,25 +15,11 @@
         content: 'This is a test dialog',
         title: 'Testing... 1. 2. 3.'
       }, [
-        { label: 'ok',     action: 'ok'     },
-        { label: 'cancel', action: 'cancel' },
-        { label: 'test A', action: Story.Sequence(function() {
-          alert('test was ' + this.scope.test); 
-          this.scope.test = 'A'; 
-        }, function() { 
-          alert('test is ' + this.scope.test); 
-        }).Options({owns_scope: false}) },
-        { label: 'test B', action: Story.Sequence(function() { 
-          alert('test was ' + this.scope.test);
-          this.scope.test = 'B';
-        }, function() {
-          alert('test is ' + this.scope.test); 
-        })},
-        { label: 'show', action: [ '@seq',
+        { label: 'login', action: [ '@flickr',
           [
             {
               setup: function() {
-                this.popup = this.scope.popup = window.open('about:', 'authenticate', _.join({
+                this.popup = this.scope.popup = window.open('/popup', 'authenticate', _.join({
                   width: 800,
                   height: 800,
                   screenX: 200,
@@ -51,7 +37,7 @@
               }
             },
             [
-              Story.Flickr('seq', 'flickr.auth.getFrob', {
+              Story.Flickr('flickr.auth.getFrob', {
               }, { timeout: 5000 }),
               Story.Switch({
                 success: [
@@ -69,7 +55,7 @@
                       return !this.scope.popup.closed;
                     } 
                   }),
-                  Story.Flickr('seq', 'flickr.auth.getToken', function() {
+                  Story.Flickr('flickr.auth.getToken', function() {
                     return {frob: this.scope.data.frob._content}
                   }),
                   function() { 

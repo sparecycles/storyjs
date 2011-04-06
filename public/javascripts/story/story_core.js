@@ -63,7 +63,7 @@ Story = _.Class({
           if(!node) { debugger; return null; }
           var instance = Object.create(node);
           instance.parent = Story.Telling.active_instance;
-          if(node.story.options.owns_scope) {
+          if(node.story.options.name) {
             instance.scope = Object.create(instance.parent.scope);
           } else {
             instance.scope = instance.parent.scope; 
@@ -91,7 +91,6 @@ Story = _.Class({
           case '@':
             var subgroup = Story.Node.Build(DefaultType, list.slice(1));
             subgroup.story.options.name = list[0].slice(1);
-            subgroup.story.options.owns_scope = true;
             return subgroup;
           default:
             // fall out

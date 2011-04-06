@@ -100,7 +100,7 @@ Story.Node.Define('Sequence', function() {
   restart: function() {
     return this.select(0);
   }
-}, { owns_scope: true });
+});
 
 Story.Node.Define('Ignore', function() {
   this.steps = [];

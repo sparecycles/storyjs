@@ -13,6 +13,9 @@ class ApplicationController < ActionController::Base
   # from your application log (in this case, all fields with names like "password"). 
   # filter_parameter_logging :password
   def index
-    render :file => 'app/views/application/index.html.haml', :layout => "story"
+    render :layout => "story"
+  end
+
+  def popup
   end
 end

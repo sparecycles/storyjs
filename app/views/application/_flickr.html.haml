@@ -22,9 +22,8 @@
       querys.push('api_sig=' + api_sig);
       return querys.join('&');
     }
-    Story.Node.Define('Flickr', function(target, method, data, options) {
+    Story.Node.Define('Flickr', function(method, data, options) {
       this.ajax_options = options;
-      this.target = target;
       this.data = data;
       this.method = method;
     }, {
@@ -43,14 +42,13 @@
           jsonpCallback: 'jsonFlickrApi',
           success: Story.callback(function(data, status) {
             this.xhr.abort();
-            Story.scope(this.target).data = data;
-            Story.scope(this.target).result = status;
+            this.scope.data = data;
+            this.scope.result = status;
             this.done = true;
             this.scope.story.update();
           }),
           error: Story.callback(function(xhr, status) {
-            debugger;
-            Story.Telling.scope(this.target).result = status;
+            this.scope.result = status;
             this.done = true;
             this.scope.story.update();
           }),
