@@ -75,11 +75,11 @@
                     return 'Loading Photos for ' + this.scope.user.fullname + '...';
                   })],
                   function() {
-                    this.scope.dialog.data('type', 'picture-dialog');
-                    this.scope.dialog.data('dialog.title', 'Success!');
                     this.scope.dialog.data('content', 
                       this.scope.data.photos.photo[0].url_m
                     );
+                    this.scope.dialog.data('type', 'picture-dialog');
+                    this.scope.dialog.data('dialog.title', 'Success!');
                     this.scope.dialog.data('dialog.buttons', []); 
                   }
                 ],
