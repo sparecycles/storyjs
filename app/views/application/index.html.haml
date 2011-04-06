@@ -41,7 +41,9 @@
               }, { timeout: 5000 }),
               Story.Switch({
                 success: [
-                  Story.Live(500, { 
+                  Story.Live(500, Story.Message(
+                    'Close the Flickr Auth Popup to Continue'
+                  ), { 
                     setup: function() {
                       var url = 'http://flickr.com/services/auth';
                       var params = { 
@@ -59,7 +61,26 @@
                     return {frob: this.scope.data.frob._content}
                   }),
                   function() { 
-                    alert(this.scope.data.auth.token._content);
+                    this.scope.api_key = this.scope.data.auth.token._content; 
+                    this.scope.user = this.scope.data.auth.user;
+                  },
+                  [Story.Flickr('flickr.photos.search', function() {
+                    return {
+                      api_key: this.scope.api_key, 
+                      user_id: this.scope.user.nsid, 
+                      extras: 'url_m',
+                      safe_search: 1
+                    };
+                  }), Story.Message(function() { 
+                    return 'Loading Photos for ' + this.scope.user.fullname + '...';
+                  })],
+                  function() {
+                    this.scope.dialog.data('type', 'picture-dialog');
+                    this.scope.dialog.data('dialog.title', 'Success!');
+                    this.scope.dialog.data('content', 
+                      this.scope.data.photos.photo[0].url_m
+                    );
+                    this.scope.dialog.data('dialog.buttons', []); 
                   }
                 ],
                 '*': [[

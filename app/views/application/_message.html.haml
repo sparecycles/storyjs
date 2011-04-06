@@ -68,10 +68,10 @@
         }
         var dialog = new Message(themessage);
         return dialog;
-      };
+      }
     }, {
       setup: function() {
-        this.dialog = this.scope.dialog = this.create_dialog();
+        this.dialog = this.create_dialog();
       },
       teardown: function() {
         if(this.dialog.is_open()) {
