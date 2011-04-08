@@ -1,0 +1,60 @@
+-# vim: set sw=2 ts=2 expandtab :
+
+- content_for :template do
+  .image-loader
+    %canvas
+
+- content_for :script do
+  :plain
+    $('#template .image-loader').defineTemplate('image-loader', {
+      'canvas' : {
+        $let : {
+          width: Template.coalesce('.width', "=100"), 
+          height: Template.coalesce('.height', "=100")
+        },
+        '@width':  '=%{width}',
+        '@height': '=%{height}',
+        '.': function() {
+          var width = Template.access('width');
+          var height = Template.access('height');
+          var ctx = this[0].getContext('2d');
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0,0,width,height);
+          ctx.fillStyle = 'black';
+          ctx.fillRect(0,0,width/2,height/2);
+        },
+        "@ondragover" : _.constant(false),
+        "@ondragenter" : function(event) {
+          return false;
+        },
+        "@ondrop" : function(event) {
+          try {
+            event = event.originalEvent;
+            if(event.dataTransfer.files.length == 0) return false;
+            var file = event.dataTransfer.files[0];
+            var image = new Image();
+            image.onload = Template.callback(function(ctx) {
+              var width = this.width, height = this.height;
+              if(width > 300) {
+                height = Math.floor(height*(300/width));
+                width = 300;
+              }
+              if(height > 300) {
+                width = Math.floor(width*(300/height));
+                height = 300;
+              }
+              Template.update('.width', width);
+              Template.update('.height', height);
+              ctx.drawImage(this, 0, 0, width, height);
+              this.onload = _.noop;
+              this.src = '';
+            }.bind(image, this.getContext('2d')));
+            var reader = new FileReader();
+            reader.onload = function(evt) {
+              image.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+          } finally { return false; }
+        }
+      }
+    });

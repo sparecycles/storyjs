@@ -152,14 +152,14 @@ _.access = function(path, root) {
   var last_part = '.';
   if(parts.length == 0) return root;
   _.each(parts.slice(0,-1), function(part) {
-    if(!(part in root)) root = _(root, part, {});
-    else root = _(root, part);
+    if(!(part in root)) root = root[part] = {};
+    else root = root[part];
   });
   var final_part = parts.slice(-1)[0];
-  if(!root) debugger;
-  var value = _(root, final_part);
+  if(!final_part || !root) debugger;
+  var value = root[final_part];
   if(arguments.length > 2 && root) {
-    value = _(root, final_part, setting);
+    value = root[final_part] = arguments[2];
   }
   return value;
 }

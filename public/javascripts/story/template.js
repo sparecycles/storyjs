@@ -129,13 +129,15 @@ Template = _.Class({
       return Template.render_or_action_context().context; 
     },
     callback: function(fn) {
+      var context = Template.render_or_action_context();
+      var args = __args();
       return _.local.call(Template, { action_context: {
-        self: Template.render_context.self,
-        mvc: Template.render_context.mvc,
+        self: context.self,
+        mvc: context.mvc,
         context: {
-          scope: Template.render_context.context.scope,
-          map: Template.render_context.context.map,
-          data: Template.render_context.context.data
+          scope: context.context.scope,
+          map: context.context.map,
+          data: context.context.data
         }
       } }, function() { return fn.apply(this, args.concat(__args())); });
     },
@@ -438,11 +440,9 @@ Template = _.Class({
                   map: Template.context().map,
                   scope: Template.scope()
                 };
-                action = function() { 
-                  return value.apply(this, __args().concat([param])); 
-                };
+                action = Template.callback(value);
               } else if(typeof value === 'string') {
-                action = Template.access(value);
+                action = Template.callback(Template.access(value));
               }
               selector.bind(event_type, action);
               Template.teardown(function() { 
@@ -534,9 +534,10 @@ Template = _.Class({
     },
     expand: function(x) {
       /* balancing brace for silly vim: { */ 
-      return x.replace(/%{([^}]*)}/g, function(match, key) {
+      var result = x.replace(/%{([^}]*)}/g, function(match, key) {
         return Template.access(key);
       });
+      return result;
     }
   }
 });
