@@ -4,22 +4,29 @@ Story = _.Class({
   }, 
   proto: {
     tell: function(scope) { 
-      return new Story.Telling(this.story, scope);
+      return new Story.Tale(this.story, scope);
     }
   },
   classic: {
     callback: function(fn) {
       var args = __args();
-      var instance = Story.Telling.active_instance;
-      var story = instance.scope.story;
-      if(typeof fn === 'string') fn = instance[fn];
-      return _.local.call(Story.Telling, {active_instance: instance}, function() {
+      var phrase = Story.Tale.context.phrase;
+      if(typeof fn === 'string') fn = phrase[fn];
+      return _.local.call(Story.Tale, {
+        context: Story.Tale.Context(phrase),
+      }, function() {
         try {
-          return fn.apply(instance, args.concat(__args()));
+          return fn.apply(Story.Tale.context.phrase, args.concat(__args()));
         } finally {
-          story.update();
+          Story.Tale.context.tale.update();
         }
       });
+    },
+    update: function() {
+      return Story.Tale.context.tale.update();
+    },
+    handle: function(arg) {
+      return Story.Tale.context.tale.handle(arg);
     },
     Node: _.Class({
       init: function() {
@@ -47,36 +54,6 @@ Story = _.Class({
             proto: _.overlay({}, prototype, { type: name })
           });
         },
-        update: function(instance) {
-          var success = false;
-          return Story.Node.instance_call(instance, 'update');
-        },
-        with_activation: function(instance, action) {
-          return Story.Node.instance_call.apply(this, arguments);
-        },
-        instance_call: function(instance, action) {
-          return _.local.call(Story.Telling, {active_instance: instance}, 
-            typeof action === 'string' ? instance[action] : action
-          ).apply(instance, __args());
-        },
-        setup: function(node) {
-          if(!node) { debugger; return null; }
-          var instance = Object.create(node);
-          instance.parent = Story.Telling.active_instance;
-          if(node.story.options.name) {
-            instance.scope = Object.create(instance.parent.scope);
-          } else {
-            instance.scope = instance.parent.scope; 
-          }
-          Story.Node.instance_call(instance, 'setup');
-          return instance;
-        },
-        teardown: function(instance) {
-          Story.Node.instance_call(instance, 'teardown');
-        },
-        handle: function(instance, arg) {
-          return Story.Node.instance_call(instance, 'handle', arg);
-        },
         register: function(parent, node) {
           if(!(node instanceof Story.Node)) {
             node = new Story.Action(node);
@@ -99,46 +76,95 @@ Story = _.Class({
         }
       }
     }),
-    Telling: _.Class({
+    Tale: _.Class({
       init: function(story, scope) {
-        this.instance = Object.create(story);
-        this.instance.scope = Object.create(scope || {});
-        this.instance.scope.story = this;
-        Story.Node.instance_call(this.instance, 'setup');
+        this.phrase = Object.create(story);
+        this.phrase.scope = Object.create(scope || {});
+        Story.Tale.Context(this.phrase, this).run('setup');
         this.update();
       },
       proto: {
         update: function() { 
-          if(!this.instance) return false;
-          var result = Story.Node.update(this.instance);
+          if(!this.phrase) return false;
+          var result = Story.Tale.Context(this.phrase, this).run('update');
           if(!result) this.stop();
           return result;
         },
         handle: function(arg) {
-          if(this.instance) {
-            return Story.Node.handle(this.instance, arg);
+          if(this.phrase) {
+            return Story.Tale.Context(this.phrase, this).run('handle', arg);
           }
         },
         stop: function() { 
-          if(!this.instance) return false;
+          if(!this.phrase) return false;
 
           try {
-            return Story.Node.teardown(this.instance);
+            return Story.Tale.Context(this.phrase, this).run('teardown');
           } finally {
-            delete this.instance;
+            delete this.phrase;
           }
+        },
+      },
+      classic: {
+        Context: _.Class({
+          init: function() {
+            var args = __args(), phrase, tale;
+            for(var index = 0; index < args.length; index++) switch(index) {
+            case 0: phrase = args[index]; break;
+            case 1: tale = args[index]; break;
+            default: debugger;
+            }
+            this.phrase = phrase || Story.Tale.context.phrase;
+            this.tale = tale || Story.Tale.context.tale;
+          },
+          proto: {
+            run: function(action) {
+              if(typeof action !== 'function') {
+                action = this.phrase[action];
+              }
+
+              return _.local.call(Story.Tale, {
+                context: this
+              }, action).call(this.phrase, __args);
+            }
+          }
+        }),
+        update: function(phrase) {
+          var success = false;
+          return Story.Tale.Context(phrase).run('update');
+        },
+        instance_call: function(phrase, action) {
+          return Story.Tale.Context(phrase).run(action);
+        },
+        setup: function(node) {
+          if(!node) { debugger; return null; }
+          var phrase = Object.create(node);
+          phrase.parent = Story.Tale.context.phrase;
+          if(node.story.options.name) {
+            phrase.scope = Object.create(phrase.parent.scope);
+          } else {
+            phrase.scope = phrase.parent.scope; 
+          }
+          Story.Tale.Context(phrase).run('setup');
+          return phrase;
+        },
+        teardown: function(phrase) {
+          Story.Tale.Context(phrase).run('teardown');
+        },
+        handle: function(phrase, arg) {
+          return Story.Tale.Context(phrase).run('handle', arg);
         }
       }
     }),
     find: function(name) {
-      var root = Story.Telling.active_instance;
+      var root = Story.Tale.context.phrase;
       while(root.parent && root.story.options.name != name) {
         root = root.parent;
       }
       return root;
     },
     scope: function(name) {
-      if(name == '.') return Story.Telling.active_instance.scope;
+      if(name == '.') return Story.Tale.context.phrase.scope;
       var node = Story.find(name);
       return node ? node.scope : null;
     }

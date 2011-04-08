@@ -45,12 +45,12 @@
             this.scope.data = data;
             this.scope.result = status;
             this.done = true;
-            this.scope.story.update();
+            Story.update();
           }),
           error: Story.callback(function(xhr, status) {
             this.scope.result = status;
             this.done = true;
-            this.scope.story.update();
+            Story.update();
           }),
           timeout: 1000*10
         }, this.ajax_options || {}));

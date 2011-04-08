@@ -61,7 +61,6 @@
 
     Story.Node.Define('Message', function(message) {
       this.create_dialog = function() {
-        var instance = this;
         var themessage = message;
         if(typeof themessage === 'function') {
           themessage = themessage.call(this);

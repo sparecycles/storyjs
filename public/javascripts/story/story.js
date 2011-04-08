@@ -20,25 +20,25 @@ Story.Node.Define('Loop', function() {
   });
 }, {
   setup: function() {
-    this.current_step = Story.Node.setup(this.steps[this.index = 0]);
+    this.current_step = Story.Tale.setup(this.steps[this.index = 0]);
   },
   teardown: function() {
-    if(this.current_step) Story.Node.teardown(this.current_step);
+    if(this.current_step) Story.Tale.teardown(this.current_step);
     delete this.current_step;
   },
   select: function(index) {
     if(this.current_step) {
-      Story.Node.teardown(this.current_step);
+      Story.Tale.teardown(this.current_step);
       delete this.current_step;
     }
     var next_step = this.steps[this.index = index];
-    if(next_step) this.current_step = Story.Node.setup(next_step);
+    if(next_step) this.current_step = Story.Tale.setup(next_step);
   },
   update: function() {
     var steps = this.steps;
     var start = this.index;
     do {
-      if(Story.Node.update(this.current_step)) break;
+      if(Story.Tale.update(this.current_step)) break;
       if(this.index == steps.length - 1) {
         this.select(0);
       } else {
@@ -49,7 +49,7 @@ Story.Node.Define('Loop', function() {
   },
   handle: function(arg) {
     if(this.current_step) {
-      Story.Node.handle(this.current_step, arg);
+      Story.Tale.handle(this.current_step, arg);
     }
   }
 });
@@ -66,35 +66,35 @@ Story.Node.Define('Sequence', function() {
   });
 }, {
   setup: function() {
-    this.current_step = Story.Node.setup(this.steps[this.index = 0]);
+    this.current_step = Story.Tale.setup(this.steps[this.index = 0]);
   },
   teardown: function() {
-    if(this.current_step) Story.Node.teardown(this.current_step); 
+    if(this.current_step) Story.Tale.teardown(this.current_step); 
     delete this.current_step;
   },
   select: function(index) {
     this.selected = true;
     var steps = this.steps;
     if(this.current_step) { 
-      Story.Node.teardown(this.current_step);
+      Story.Tale.teardown(this.current_step);
       delete this.current_step;
     }
     this.index = index;
     var next_step = steps[this.index];
     if(next_step) {
-      this.current_step = Story.Node.setup(next_step);
+      this.current_step = Story.Tale.setup(next_step);
     }
   },
   update: function() {
     var steps = this.steps;
-    while(this.current_step && !Story.Node.update(this.current_step)) {
+    while(this.current_step && !Story.Tale.update(this.current_step)) {
       this.select.call(this, this.index + 1);
     }
     return this.index < steps.length;
   },
   handle: function(arg) {
     if(this.current_step) {
-      Story.Node.handle(this.current_step, arg);
+      Story.Tale.handle(this.current_step, arg);
     }
   },
   restart: function() {
@@ -113,31 +113,31 @@ Story.Node.Define('Ignore', function() {
   });
 }, {
   setup: function() {
-    this.current_step = Story.Node.setup(this.steps[this.index = 0]);
+    this.current_step = Story.Tale.setup(this.steps[this.index = 0]);
   },
   teardown: function() {
     if(this.current_step) {
-      Story.Node.teardown(this.current_step);
+      Story.Tale.teardown(this.current_step);
       delete this.current_step;
     }
   },
   select: function(index) {
     if(this.current_step) {
-      Story.Node.teardown(this.current_step);
+      Story.Tale.teardown(this.current_step);
       delete this.current_step;
     }
     var next_step = this.steps[this.index = index];
-    if(next_step) this.current_step = Story.Node.setup(next_step);
+    if(next_step) this.current_step = Story.Tale.setup(next_step);
   },
   update: function() {
     var steps = this.steps;
-    while(this.current_step && !Story.Node.update(this.current_step))
+    while(this.current_step && !Story.Tale.update(this.current_step))
       this.select.call(this, this.index + 1);
     return false;
   },
   handle: function(arg) {
     if(this.current_step) {
-      Story.Node.handle(this.current_step, arg);
+      Story.Tale.handle(this.current_step, arg);
     }
   }
 });
@@ -153,24 +153,24 @@ Story.Node.Define('Group', function() {
 }, {
   setup: function() {
     this.instances = _.map.call(this, this.nodes, function(node) {
-      return Story.Node.setup(node);
+      return Story.Tale.setup(node);
     });
   },
   teardown: function() {
     _.each(this.instances, function(node) {
-      Story.Node.teardown(node);
+      Story.Tale.teardown(node);
     });
   },
   update: function() {
     var result = false;
     _.each(this.instances, function(node) {
-      result = Story.Node.update(node) || result;
+      result = Story.Tale.update(node) || result;
     });
     return result;
   },
   handle: function(arg) {
     _.each(this.instances, function(node) {
-      Story.Node.handle(node, arg);
+      Story.Tale.handle(node, arg);
     });
   }
 });
@@ -194,25 +194,25 @@ Story.Node.Define('Switch', function(states) {
     if(!task) {
       task = this.tasks['*'];
     }
-    this.current_task = task && Story.Node.setup(task);
+    this.current_task = task && Story.Tale.setup(task);
   },
   teardown: function() {
-    if(this.current_task) Story.Node.teardown(this.current_task);
+    if(this.current_task) Story.Tale.teardown(this.current_task);
     delete this.current_task;
   },
   update: function() {
-    return this.current_task ? Story.Node.update(this.current_task) : 0;
+    return this.current_task ? Story.Tale.update(this.current_task) : 0;
   },
   handle: function(arg) {
-    return this.current_task ? Story.Node.handle(this.current_task, arg) : 0;
+    return this.current_task ? Story.Tale.handle(this.current_task, arg) : 0;
   },
   select: function(state) {
     var next_task = this.tasks[state];
     if(!next_task) next_task = this.tasks[state];
     if(next_task) {
-      if(this.current_task) Story.Node.teardown(this.current_task);
+      if(this.current_task) Story.Tale.teardown(this.current_task);
       this.state = state;
-      this.current_task = Story.Node.setup(next_task);
+      this.current_task = Story.Tale.setup(next_task);
     }
   }
 });
@@ -223,15 +223,14 @@ Story.Node.Define('Live', function(interval) {
   this.node = Story.Node.register(this, Story.Node.Build(Story.Group, __args()));
 }, {
   setup: function() {
-    var story = this.scope.story;
-    this.handle = setInterval(function() { story.update(); }, this.interval);
-    this.content = Story.Node.setup(this.node);
+    this.handle = setInterval(Story.callback(Story.update), this.interval);
+    this.content = Story.Tale.setup(this.node);
   },
   update: function() {
-    return Story.Node.update(this.content);
+    return Story.Tale.update(this.content);
   },
   teardown: function() {
-    Story.Node.teardown(this.content);
+    Story.Tale.teardown(this.content);
     clearInterval(this.handle);
   }
 });
@@ -241,10 +240,10 @@ Story.Node.Define('Delay', function(ms) {
 }, {
   setup: function() {
     var self = this;
-    this.timeout = setTimeout(function() {
+    this.timeout = setTimeout(Story.callback(function() {
       self.done = true; 
-      self.scope.story.update(); 
-    }, this.delay);
+      Story.update(); 
+    }), this.delay);
   },
   teardown: function() {
     clearTimeout(this.timeout);

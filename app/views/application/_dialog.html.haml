@@ -112,7 +112,7 @@
       var args = __args();
       // maybe reprocess button into story nodes.
       args[2] = _.map.call(this, args[2], function(button) {
-        return _.overlay(button, {action: function(action) {
+        return _.overlay(button, { action: function(action) {
           var action = button.action;
           if(typeof action === 'function') {
             return action;
@@ -123,32 +123,29 @@
             return Story.Node.register(this, action);
           } else {
             return function() {
-              this.parent.scope.result = action;
+              this.scope.result = action;
               this.dialog.close();
-              this.scope.story.update();
+              Story.update();
             };
           }
         }.call(this, button.action) }); 
       });
       
       this.create_dialog = function() {
-        var instance = this;
         var dialog = Dialog.apply(null, args);
         var handler = dialog.data('dialog.handler')();
-        dialog.data('dialog.handler', function(arg) {
+        dialog.data('dialog.handler', Story.callback(function(arg) {
           if(!(arg instanceof Story.Node)) {
-            var result = Story.Node.with_activation(instance, arg);
+            var result = arg.call(this);
             if(result !== false) dialog.close();
           } else {
-            if(instance.button_node) {
-              Story.Node.teardown(instance.button_node);
+            if(this.button_node) {
+              Story.Tale.teardown(this.button_node);
             }
-            instance.button_node = Story.Node.with_activation(instance, function() { 
-              return Story.Node.setup(arg);
-            });
+            this.button_node = Story.Tale.setup(arg);
           }
-          instance.scope.story.update();
-        });
+          Story.update();
+        }));
         return dialog;
       };
     }, {
@@ -157,13 +154,13 @@
       },
       update: function() {
         if(this.button_node) {
-          Story.Node.update(this.button_node);
+          Story.Tale.update(this.button_node);
         }
         return this.dialog.is_open();
       },
       teardown: function() {
         if(this.button_node) {
-          Story.Node.teardown(this.button_node);
+          Story.Tale.teardown(this.button_node);
         }
         if(this.dialog.is_open()) {
           this.dialog.close();
