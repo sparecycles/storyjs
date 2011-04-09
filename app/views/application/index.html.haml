@@ -3,6 +3,7 @@
 - uses :ajax
 - uses :flickr
 - uses :message
+- uses :image_loader   
 
 - content_for :title do
   Story
@@ -126,5 +127,9 @@
       story.update();
     })
     .appendTo($('body'))
+    var canvas_mvc = new MVC({width: 400, height: 300});
+    $('<div/>').appendTo('body').template(canvas_mvc, {
+      '.' : { $template: '=image-loader' }
+    });
 
 -# vim: set sw=2 ts=2 expandtab :
