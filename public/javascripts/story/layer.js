@@ -7,25 +7,25 @@ if(Object.create === undefined || TESTING) {
     function _() {};
     _.prototype = proto;
     return new _;
-  }
+  };
 }
 
 if(Object.getPrototypeOf === undefined || TESTING) {
   Object.getPrototypeOf = function(obj) {
-    return obj.constructor.prototype;
-  }
+    return obj.__proto__ || obj.constructor.prototype;
+  };
 }
 
 if(Object.freeze === undefined || TESTING) {
   Object.freeze = function(obj) {
     return obj;
-  }
+  };
 }
 
 if(Object.isFrozen === undefined || TESTING) {
   Object.isFrozen = function(obj) {
     return false;
-  }
+  };
 }
 
 if(Object.keys === undefined || TESTING) {
@@ -35,7 +35,7 @@ if(Object.keys === undefined || TESTING) {
       result.push(k);
     }
     return k;
-  }
+  };
 }
 
 if(Object.getOwnPropertyNames === undefined || TESTING) {
@@ -78,11 +78,11 @@ function __args() {
 
 _.is_object = function(thing) {
   return typeof thing === 'object' && thing instanceof Object;
-}
+};
 
 _.is_primitive = function(thing) {
   return thing === null || thing === undefined || (Object(thing) !== thing && Object(thing).valueOf() === thing);
-}
+};
 
 // Function: _.extend
 // overlay maps, but on collisions: concatenates arrays, and combines functions, recursively.
@@ -121,21 +121,21 @@ _.overlay = function(base) {
     });
   });
   return base;
-}
+};
 
 // Function: _.override
 // Returns an object with data shadowed.
 _.override = function(base) {
   return _.overlay.apply(null, [Object.create(base)].concat(__args()));
-}
+};
 
 // Function: _.constant
 // returns a constant function which returns the first argument to _.constant
-_.constant = function(x) { return function() { return x; } }
+_.constant = function(x) { return function() { return x; } };
 
 // Function: _.identity
 // is a function that returns its first argument
-_.identity = function(x) { return x; }
+_.identity = function(x) { return x; };
 
 // Function: _.access
 // _.access('.x.y', { x: { y: 10 } }) returns 10, ok?
@@ -228,11 +228,11 @@ _.map = function(list, action) {
     }
     return result;
   }
-}
+};
 
 // Function: _.noop.
 // Stub function, doesn't do anything.
-_.noop = function() {}
+_.noop = function() {};
 
 // Function: range
 // sort of _.map([start...end], fn).
@@ -246,7 +246,7 @@ _.range = function(start, end, fn) {
     result.push(fn.call(this, i));
   }
   return result;
-}
+};
 
 // Function: _.build
 // Builds a map from a property list of k,v,k,v,k,v... pairs.
@@ -306,7 +306,7 @@ _.list = function(map, fn) {
     }
   }
   return result;
-}
+};
 
 _.deepfreeze = function(obj) {
   if(undefined == obj) debugger;
@@ -314,21 +314,21 @@ _.deepfreeze = function(obj) {
     if(_.is_object(property)) return _.deepfreeze(property);
     return property;
   })));
-}
+};
 
 _.copy = function(obj) {
   return _.map(obj, function(property) {
     if(_.is_object(property)) return _.copy(property);
     else return property;
   });
-}
+};
 
 _.until = function(list, fn) {
   for(var key in list) {
     var result = fn.call(this, list[key], key);
     if(result !== undefined) return result;
   }
-}
+};
 
 _.profile = function(name, fn) {
   console.profile(name);
@@ -337,13 +337,11 @@ _.profile = function(name, fn) {
   } finally {
     console.profileEnd();
   }
-}
-
-_.noop = function() {};
+};
 
 _.Class = function(options) {
   return _.defineClass(options.init || function(){}, options.base, options.proto, options.classic);
-}
+};
 
 _.defineClass = function(klass, base, proto, statik) {
   var name = ((proto || {})._ || {}).name || (klass || function(){}).name;

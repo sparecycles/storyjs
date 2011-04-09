@@ -12,9 +12,7 @@ Story = _.Class({
       var args = __args();
       var phrase = Story.Tale.context.phrase;
       if(typeof fn === 'string') fn = phrase[fn];
-      return _.local.call(Story.Tale, {
-        context: Story.Tale.Context(phrase),
-      }, function() {
+      return Story.Tale.Context(phrase).bind(function() {
         try {
           return fn.apply(Story.Tale.context.phrase, args.concat(__args()));
         } finally {
@@ -107,13 +105,7 @@ Story = _.Class({
       },
       classic: {
         Context: _.Class({
-          init: function() {
-            var args = __args(), phrase, tale;
-            for(var index = 0; index < args.length; index++) switch(index) {
-            case 0: phrase = args[index]; break;
-            case 1: tale = args[index]; break;
-            default: debugger;
-            }
+          init: function(phrase, tale) {
             this.phrase = phrase || Story.Tale.context.phrase;
             this.tale = tale || Story.Tale.context.tale;
           },
@@ -125,12 +117,22 @@ Story = _.Class({
 
               return _.local.call(Story.Tale, {
                 context: this
-              }, action).call(this.phrase, __args);
+              }, action).apply(this.phrase, __args());
+            },
+            bind: function(action) {
+              if(typeof action !== 'function') {
+                action = this.phrase[action];
+              }
+              var args = __args();
+              return _.local.call(Story.Tale, {
+                context: this
+              }, function() {
+                return action.apply(Story.Tale.context.phrase, args.concat(__args()));
+              });
             }
           }
         }),
         update: function(phrase) {
-          var success = false;
           return Story.Tale.Context(phrase).run('update');
         },
         instance_call: function(phrase, action) {

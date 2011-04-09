@@ -343,6 +343,7 @@ Template = _.Class({
       }
 
       if(Template.context().map.$template) {
+        var $template_src = Template.context().map.$template;
         var $template = Template.access(Template.context().map.$template);
         Template.context().map.$template = undefined;
         var content_map = {};
@@ -361,6 +362,10 @@ Template = _.Class({
         Template.context().map.$partial = this;
         Template.context().map.$as_context = Template.context();
         var template_fn = Template.definedTemplates[$template];
+        if(!template_fn) { 
+          console.error('undefined template %o (%o)', $template, $template_src)
+          debugger;
+        }
         Template.opt(this, function() {
           template_fn.call(this);
         });
@@ -549,7 +554,7 @@ jQuery.fn.defineTemplate = function(name, map) {
     console.warn('Bad defineTemplate("' + name + '"), selector.length != 1');
     debugger;
   }
-  src.attr('id', null); // clear id attribute, probably the selector.
+  //src.attr('id', null); // clear id attribute, probably the selector.
   Template.definedTemplates[name] = function() {
     var parent = Object.create(Template.context());
     Template(this, function() {

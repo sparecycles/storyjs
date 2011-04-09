@@ -24,7 +24,6 @@ Story.Node.Define('Loop', function() {
   },
   teardown: function() {
     if(this.current_step) Story.Tale.teardown(this.current_step);
-    delete this.current_step;
   },
   select: function(index) {
     if(this.current_step) {
@@ -42,7 +41,7 @@ Story.Node.Define('Loop', function() {
       if(this.index == steps.length - 1) {
         this.select(0);
       } else {
-        this.select.call(this, this.index + 1);
+        this.select(this.index + 1);
       }
     } while(this.index != start);
     return true;
@@ -74,23 +73,21 @@ Story.Node.Define('Sequence', function() {
   },
   select: function(index) {
     this.selected = true;
-    var steps = this.steps;
     if(this.current_step) { 
       Story.Tale.teardown(this.current_step);
       delete this.current_step;
     }
     this.index = index;
-    var next_step = steps[this.index];
+    var next_step = this.steps[this.index];
     if(next_step) {
       this.current_step = Story.Tale.setup(next_step);
     }
   },
   update: function() {
-    var steps = this.steps;
     while(this.current_step && !Story.Tale.update(this.current_step)) {
-      this.select.call(this, this.index + 1);
+      this.select(this.index + 1);
     }
-    return this.index < steps.length;
+    return this.index < this.steps.length;
   },
   handle: function(arg) {
     if(this.current_step) {
@@ -132,7 +129,7 @@ Story.Node.Define('Ignore', function() {
   update: function() {
     var steps = this.steps;
     while(this.current_step && !Story.Tale.update(this.current_step))
-      this.select.call(this, this.index + 1);
+      this.select(this.index + 1);
     return false;
   },
   handle: function(arg) {

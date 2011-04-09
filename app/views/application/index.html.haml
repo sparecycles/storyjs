@@ -5,22 +5,42 @@
 - uses :message
 - uses :image_loader   
 
+.main-content
+  .template
+
 - content_for :template do
-  .flickr-photos-dialog
-    .content
-      .photos
-        %img.photo
+  .empty
 
 - content_for :script do
   :plain
-    $('#template .flickr-photos-dialog').defineTemplate('flickr-photos', {
-      $template : '=dialog-template',
-      '...dialog' : '.dialog',
-      '.content' : { $as : 'content', 
-        '.photo' : { $each: { photo: '.photos.photo' },
-          '@src' : 'photo.url_m'
-        }
-      },
+    $('#template .empty').defineTemplate('empty', {});
+    var main_content = new MVC({template:'empty'});
+    if(0) $('.main-content .template').template(main_content, {
+      '.': {
+        $template: '.template',
+        $in: '.data'
+      }
+    });
+
+    function SetMainContent(template, data) {
+      main_content.locked(function() {
+        this.data('template', template);
+        this.data('data', data);
+      });
+    }
+
+
+- content_for :template do
+  .flickr-photos
+    .photos
+      %img.photo
+
+- content_for :script do
+  :plain
+    $('#template .flickr-photos').defineTemplate('flickr-photos', {
+      '.photo' : { $each: { photo: '.photos.photo' },
+        '@src' : 'photo.url_m'
+      }
     });
 
 - content_for :title do
