@@ -5,6 +5,24 @@
 - uses :message
 - uses :image_loader   
 
+- content_for :template do
+  .flickr-photos-dialog
+    .content
+      .photos
+        %img.photo
+
+- content_for :script do
+  :plain
+    $('#template .flickr-photos-dialog').defineTemplate('flickr-photos', {
+      $template : '=dialog-template',
+      '...dialog' : '.dialog',
+      '.content' : { $as : 'content', 
+        '.photo' : { $each: { photo: '.photos.photo' },
+          '@src' : 'photo.url_m'
+        }
+      },
+    });
+
 - content_for :title do
   Story
 
@@ -68,7 +86,7 @@
                   [Story.Flickr('flickr.photos.search', function() {
                     return {
                       api_key: this.scope.api_key, 
-                      user_id: this.scope.user.nsid, 
+                      user_id: "58821758@N02",
                       extras: 'url_m',
                       safe_search: 1
                     };
@@ -76,12 +94,14 @@
                     return 'Loading Photos for ' + this.scope.user.fullname + '...';
                   })],
                   function() {
-                    this.scope.dialog.data('content', 
-                      this.scope.data.photos.photo[0].url_m
+                    this.scope.dialog.data('photos', 
+                      this.scope.data.photos
                     );
-                    this.scope.dialog.data('type', 'picture-dialog');
-                    this.scope.dialog.data('dialog.title', 'Success!');
-                    this.scope.dialog.data('dialog.buttons', []); 
+                    this.scope.dialog.data('type', 'flickr-photos');
+                    this.scope.dialog.data('dialog.buttons', [{
+                      label: 'close',
+                      action: function() { this.scope.dialog.close(); }
+                    }]); 
                   }
                 ],
                 '*': [[
