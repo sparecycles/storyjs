@@ -1,16 +1,15 @@
-MVC = _.Class({
-  init: function(data) {
-    this.root = data;
-    this.accessed_stack = [];
-    this.written = {};
-    this.data = new MVC.wrapper(this, this.root, 'data');
+MVC = _.Class(function(data) {
+  this.root = data;
+  this.accessed_stack = [];
+  this.written = {};
+  this.data = new MVC.wrapper(this, this.root, 'data');
 
-    this.listener_id_counter = 1;
-    this.free_listener_id = 0;
-    this.listeners = {};
-    this.reasons = {};
-    this.lock_count = 0;
-  }, 
+  this.listener_id_counter = 1;
+  this.free_listener_id = 0;
+  this.listeners = {};
+  this.reasons = {};
+  this.lock_count = 0;
+}, { 
   proto: {
     accessed: function() {
       return this.accessed_stack.slice(-1)[0] || {};
@@ -199,15 +198,14 @@ MVC.constant = function(value) {
   }, value, '!');
 }
 
-MVC.wrapper = _.Class({
-  init: function MVC_wrapper(mvc, value, path) {
-    this.mvc = mvc;
-    this.value = value;
-    this.path = path;
-    var wrapper = MVC.wrapper.fn.bind(this);
-    wrapper._ = _.override(MVC.wrapper.fn._, { self: wrapper });
-    return wrapper;
-  }, 
+MVC.wrapper = _.Class(function(mvc, value, path) {
+  this.mvc = mvc;
+  this.value = value;
+  this.path = path;
+  var wrapper = MVC.wrapper.fn.bind(this);
+  wrapper._ = _.override(MVC.wrapper.fn._, { self: wrapper });
+  return wrapper;
+}, {
   proto: {
     get: function(access) {
       var path = this.path;

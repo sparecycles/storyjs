@@ -1,67 +1,50 @@
-Story.Node.Define('Action', function(node) {
-  if(typeof node === 'function') {
-    this.update = node;
+/** Story
+ *
+-- Licence
+ * Copyright (c) 2011 Adam Freidin
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+Story.Plot.Define('Action', function(device) {
+  if(typeof device === 'function') {
+    this.update = device;
   } else {
-    var node_functions = ['setup', 'teardown', 'update', 'handle'];
-    _.each.call(this, node_functions, function(fn) {
-      if(node[fn]) this[fn] = node[fn];
+    var device_functions = ['setup', 'teardown', 'update', 'handle'];
+
+    _.each.call(this, device_functions, function(fn) {
+      if(device[fn]) this[fn] = device[fn];
     });
+
+    if(device.name) this.Options({name:device.name});
   }
 }, { });
 
-Story.Node.Define('Loop', function() {
-  this.steps = [];
-  this.index = -1;
-  _.each.call(this, __args(), function(node) {
-    if(node instanceof Array) {
-      node = Story.Node.Build(Story.Group, node);
-    }
-    this.steps.push(Story.Node.register(this, node));
-  });
-}, {
-  setup: function() {
-    this.current_step = Story.Tale.setup(this.steps[this.index = 0]);
-  },
-  teardown: function() {
-    if(this.current_step) Story.Tale.teardown(this.current_step);
-  },
-  select: function(index) {
-    if(this.current_step) {
-      Story.Tale.teardown(this.current_step);
-      delete this.current_step;
-    }
-    var next_step = this.steps[this.index = index];
-    if(next_step) this.current_step = Story.Tale.setup(next_step);
-  },
-  update: function() {
-    var steps = this.steps;
-    var start = this.index;
-    do {
-      if(Story.Tale.update(this.current_step)) break;
-      if(this.index == steps.length - 1) {
-        this.select(0);
-      } else {
-        this.select(this.index + 1);
-      }
-    } while(this.index != start);
-    return true;
-  },
-  handle: function(arg) {
-    if(this.current_step) {
-      Story.Tale.handle(this.current_step, arg);
-    }
-  }
-});
-
-Story.Node.Define('Sequence', function() {
+Story.Plot.Define('Sequence', function() {
   this.steps = [];
   this.index = -1;
   var args = __args();
-  _.each.call(this, args, function(node) {
-    if(node instanceof Array) {
-      node = Story.Node.Build(Story.Group, node);
+  _.each.call(this, args, function(device) {
+    if(device instanceof Array) {
+      device = Story.Plot.Build(["#Compound"].concat(device));
     }
-    this.steps.push(Story.Node.register(this, node));
+    this.steps.push(Story.Plot.Register(this, device));
   });
 }, {
   setup: function() {
@@ -99,88 +82,75 @@ Story.Node.Define('Sequence', function() {
   }
 });
 
-Story.Node.Define('Ignore', function() {
-  this.steps = [];
-  this.index = -1;
-  _.each.call(this, __args(), function(node) {
-    if(node instanceof Array) {
-      node = Story.Node.Build(Story.Group, node);
-    }
-    this.steps.push(Story.Node.register(this, node));
-  });
+Story.Plot.Define('Loop:Sequence', function() {
 }, {
-  setup: function() {
-    this.current_step = Story.Tale.setup(this.steps[this.index = 0]);
-  },
-  teardown: function() {
-    if(this.current_step) {
-      Story.Tale.teardown(this.current_step);
-      delete this.current_step;
-    }
-  },
-  select: function(index) {
-    if(this.current_step) {
-      Story.Tale.teardown(this.current_step);
-      delete this.current_step;
-    }
-    var next_step = this.steps[this.index = index];
-    if(next_step) this.current_step = Story.Tale.setup(next_step);
-  },
   update: function() {
     var steps = this.steps;
-    while(this.current_step && !Story.Tale.update(this.current_step))
-      this.select(this.index + 1);
-    return false;
-  },
-  handle: function(arg) {
-    if(this.current_step) {
-      Story.Tale.handle(this.current_step, arg);
-    }
+    var start = this.index;
+    do {
+      if(Story.Tale.update(this.current_step)) break;
+      if(this.index == steps.length - 1) {
+        this.select(0);
+      } else {
+        this.select(this.index + 1);
+      }
+    } while(this.index != start);
+
+    return true;
   }
 });
 
-Story.Node.Define('Group', function() { 
-  this.nodes = [];
-  _.each.call(this, __args(), function(node) {
-    if(node instanceof Array) {
-      node = Story.Node.Build(Story.Sequence, node);
+
+Story.Plot.Define('Ignore:Sequence', function() {
+}, {
+  update: function() {
+    Story.Sequence.prototype.update.call(this);
+    return false;
+  }
+});
+
+Story.Plot.Define('Compound', function() { 
+  this.plots = [];
+  _.each.call(this, __args(), function(plot) {
+    if(plot instanceof Array) {
+      plot = Story.Plot.Build(plot);
     }
-    this.nodes.push(Story.Node.register(this, node));
+    this.plots.push(Story.Plot.Register(this, plot));
   });
 }, {
   setup: function() {
-    this.instances = _.map.call(this, this.nodes, function(node) {
-      return Story.Tale.setup(node);
+    this.devices = _.map.call(this, this.plots, function(plot) {
+      return Story.Tale.setup(plot);
     });
   },
   teardown: function() {
-    _.each(this.instances, function(node) {
-      Story.Tale.teardown(node);
+    _.each(this.devices.slice().reverse(), function(device) {
+      Story.Tale.teardown(device);
     });
   },
   update: function() {
     var result = false;
-    _.each(this.instances, function(node) {
-      result = Story.Tale.update(node) || result;
+    _.each(this.devices, function(device) {
+      result = Story.Tale.update(device) || result;
     });
     return result;
   },
   handle: function(arg) {
-    _.each(this.instances, function(node) {
-      Story.Tale.handle(node, arg);
+    _.each(this.devices, function(device) {
+      Story.Tale.handle(device, arg);
     });
   }
 });
 
-Story.Node.Define('Switch', function(states) {
+Story.Plot.Define('Switch', function(states) {
   this.tasks = {};
   this.options = {};
   _.each.call(this, states, function(t, k) {
     if(k.slice(0,1) != '$') {
       if(t instanceof Array) {
-        t = Story.Node.Build(Story.Sequence, t);
+        t = Story.Plot.Build(t);
       }
-      this.tasks[k] = Story.Node.register(this, t);
+      this.tasks[k] = Story.Plot.Register(this, t);
     } else this.options[k] = t;
   });
 }, {
@@ -214,14 +184,14 @@ Story.Node.Define('Switch', function(states) {
   }
 });
 
-Story.Node.Define('Live', function(interval) {
+Story.Plot.Define('Live', function(interval) {
   arguments;
   this.interval = interval;
-  this.node = Story.Node.register(this, Story.Node.Build(Story.Group, __args()));
+  this.device = Story.Plot.Register(this, Story.Plot.Build(__args()));
 }, {
   setup: function() {
     this.handle = setInterval(Story.callback(Story.update), this.interval);
-    this.content = Story.Tale.setup(this.node);
+    this.content = Story.Tale.setup(this.device);
   },
   update: function() {
     return Story.Tale.update(this.content);
@@ -232,7 +202,7 @@ Story.Node.Define('Live', function(interval) {
   }
 });
 
-Story.Node.Define('Delay', function(ms) {
+Story.Plot.Define('Delay', function(ms) {
   this.delay = ms;
 }, {
   setup: function() {

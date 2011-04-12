@@ -22,7 +22,7 @@
       querys.push('api_sig=' + api_sig);
       return querys.join('&');
     }
-    Story.Node.Define('Flickr', function(method, data, options) {
+    Story.Plot.Define('Flickr', function(method, data, options) {
       this.ajax_options = options;
       this.data = data;
       this.method = method;

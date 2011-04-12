@@ -41,21 +41,20 @@
         } }
       }
     });
-    ProgressBar = _layer.Class({
-      init: function(title) {
-        var self = this;
-        var model = new MVC({
-          title: title,
-          percent: 0,
-          cancel: function() { self.close(); }
-        });
-        this.data = model.data;
-        this.progress = $("<div/>").appendTo($('body')).template(model, {
-          '.' : {
-            $template: '=progress-bar'
-          }
-        });
-      }, 
+    ProgressBar = _layer.Class(function(title) {
+      var self = this;
+      var model = new MVC({
+        title: title,
+        percent: 0,
+        cancel: function() { self.close(); }
+      });
+      this.data = model.data;
+      this.progress = $("<div/>").appendTo($('body')).template(model, {
+        '.' : {
+          $template: '=progress-bar'
+        }
+      });
+    }, { 
       proto: {
         is_open: function() {
           return this.hasOwnProperty('progress');

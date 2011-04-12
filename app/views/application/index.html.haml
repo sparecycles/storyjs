@@ -4,6 +4,8 @@
 - uses :flickr
 - uses :message
 - uses :image_loader   
+-# uses :jsdoc   
+- uses :litijs
 
 .main-content
   .template
@@ -15,7 +17,7 @@
   :plain
     $('#template .empty').defineTemplate('empty', {});
     var main_content = new MVC({template:'empty'});
-    if(0) $('.main-content .template').template(main_content, {
+    $('.main-content .template').template(main_content, {
       '.': {
         $template: '.template',
         $in: '.data'
@@ -48,128 +50,97 @@
 
 - content_for :script do
   :plain 
-    var DialogStory = Story([ '@testdialog',
-      function() { this.scope.test = 'test'; },
-      Story.Dialog('basic-dialog', {
-        content: 'This is a test dialog',
-        title: 'Testing... 1. 2. 3.'
-      }, [
-        { label: 'login', action: [ '@flickr',
-          [
-            {
-              setup: function() {
-                this.popup = this.scope.popup = window.open('/popup', 'authenticate', _.join({
-                  width: 800,
-                  height: 800,
-                  screenX: 200,
-                  screenY: 200,
-                  toolbar: 'no',
-                  location: 'no',
-                  status: 'no',
-                  copyhistory: 'no',
-                  scrollbars: 'yes'
-                }, ['=',',']));
-                this.popup.onclose = function() { alert('BANG!'); };
-              },
-              teardown: function() {
-                if(!this.popup.closed) this.popup.close();
-              }
+    var DialogStory = new Story(Story.Dialog('basic-dialog', {
+      content: 'This is a test dialog',
+      title: 'Testing... 1. 2. 3.'
+    }, [
+      { label: 'login', action: [ '@flickr',
+        [
+          {
+            setup: function() {
+              this.popup = this.scope.popup = window.open('/popup', 'authenticate', _.join({
+                width: 800,
+                height: 800,
+                screenX: 200,
+                screenY: 200,
+                toolbar: 'no',
+                location: 'no',
+                status: 'no',
+                copyhistory: 'no',
+                scrollbars: 'yes'
+              }, ['=',',']));
+              this.popup.onclose = function() { alert('BANG!'); };
             },
-            [
-              Story.Flickr('flickr.auth.getFrob', {
-              }, { timeout: 5000 }),
-              Story.Switch({
-                success: [
-                  Story.Live(500, Story.Message(
-                    'Close the Flickr Auth Popup to Continue'
-                  ), { 
-                    setup: function() {
-                      var url = 'http://flickr.com/services/auth';
-                      var params = { 
-                        api_key: Flickr.api_key,
-                        perms: 'read',
-                        frob: this.scope.data.frob._content,
-                      };
-                      this.scope.popup.location = url + '?' + Flickr.Sign(params)
-                    }, 
-                    update: function() {
-                      return !this.scope.popup.closed;
-                    } 
-                  }),
-                  Story.Flickr('flickr.auth.getToken', function() {
-                    return {frob: this.scope.data.frob._content}
-                  }),
-                  function() { 
-                    this.scope.api_key = this.scope.data.auth.token._content; 
-                    this.scope.user = this.scope.data.auth.user;
-                  },
-                  [Story.Flickr('flickr.photos.search', function() {
-                    return {
-                      api_key: this.scope.api_key, 
-                      user_id: "58821758@N02",
-                      extras: 'url_m',
-                      safe_search: 1
-                    };
-                  }), Story.Message(function() { 
-                    return 'Loading Photos for ' + this.scope.user.fullname + '...';
-                  })],
-                  function() {
-                    this.scope.dialog.data('photos', 
-                      this.scope.data.photos
-                    );
-                    this.scope.dialog.data('type', 'flickr-photos');
-                    this.scope.dialog.data('dialog.buttons', [{
-                      label: 'close',
-                      action: function() { this.scope.dialog.close(); }
-                    }]); 
-                  }
-                ],
-                '*': [[
-                  Story.Message("Error!"),
-                  Story.Delay(3000)
-                ]]
-              })
-            ]
-          ]
-        ]}
-      ]),
-      Story.Switch({
-        ok: [ 
-          Story.Dialog('basic-dialog', {
-            title: 'Thanks!',
-            content: "You pressed OK, I hope you're ok with that"
-          }, [ 
-            { label : 'close', action: [ 
-               function() { this.scope.dialog.data('content', 'closing... please wait'); 
-               }, Story.Delay(1000),
-               function() { this.scope.dialog.data('content', 'closing... please wait 3'); 
-               }, Story.Delay(500),
-               function() { this.scope.dialog.data('content', 'closing... please wait 2'); 
-               }, Story.Delay(500),
-               function() { this.scope.dialog.data('content', 'closing... please wait 1'); 
-               }, Story.Delay(500), function() { this.scope.dialog.close(); }
-            ] },
-            { label : 'whoops', action: function() {
-              Story.find('testdialog').restart();
-            } },
-            { label: 'test', action: Story.Dialog('basic-dialog', {
-                title: 'Inner Dialog',
-                content: "Inner dialogue is crazy talk."
-              }, [ { label: 'ok', action: 'thanks' } ] ) 
+            teardown: function() {
+              if(!this.popup.closed) this.popup.close();
             }
-          ]) 
+          },
+          [
+            Story.Flickr('flickr.auth.getFrob', {
+            }, { timeout: 5000 }),
+            Story.Switch({
+              success: [
+                Story.Live(500, Story.Message(
+                  'Close the Flickr Auth Popup to Continue'
+                ), { 
+                  setup: function() {
+                    var url = 'http://flickr.com/services/auth';
+                    var params = { 
+                      api_key: Flickr.api_key,
+                      perms: 'read',
+                      frob: this.scope.data.frob._content,
+                    };
+                    this.scope.popup.location = url + '?' + Flickr.Sign(params)
+                  }, 
+                  update: function() {
+                    return !this.scope.popup.closed;
+                  } 
+                }),
+                Story.Flickr('flickr.auth.getToken', function() {
+                  return {frob: this.scope.data.frob._content}
+                }),
+                function() {
+                  this.scope.api_key = this.scope.data.auth.token._content; 
+                  this.scope.user = this.scope.data.auth.user;
+                },
+                [Story.Flickr('flickr.photos.search', function() {
+                  return {
+                    api_key: this.scope.api_key, 
+                    user_id: this.scope.user.nsid,
+                    extras: 'url_m',
+                    safe_search: 1
+                  };
+                }), Story.Message(function() { 
+                  return 'Loading Photos for ' + this.scope.user.fullname + '...';
+                })],
+                function() {
+                  this.scope.dialog.data('photos', 
+                    this.scope.data.photos
+                  );
+                  this.scope.dialog.data('type', 'flickr-photos');
+                  this.scope.dialog.data('dialog.buttons', [{
+                    label: 'close',
+                    action: function() { this.scope.dialog.close(); }
+                  }]); 
+                }
+              ],
+              '*': [
+                Story.Message("Error!"),
+                Story.Delay(3000)
+              ]
+            })
+          ]
         ]
-      })
-    ]);
-    $('<button>dialog</button>')
+      ]}
+    ]));
+    false && $('<button>dialog</button>')
     .click(function() {
-      var story = DialogStory.tell();
-      story.update();
+      DialogStory.tell();
     })
-    .appendTo($('body'))
+    .appendTo($('body'));
     var canvas_mvc = new MVC({width: 400, height: 300});
-    $('<div/>').appendTo('body').template(canvas_mvc, {
+    false && $('<div/>').appendTo('body').template(canvas_mvc, {
       '.' : { $template: '=image-loader' }
     });
-
+    $('body').litijs('javascripts/story/story_core.js');
 -# vim: set sw=2 ts=2 expandtab :

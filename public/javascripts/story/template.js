@@ -1,23 +1,22 @@
-Template = _.Class({
-  init: function(self, action) {
-    var args = __args();
+Template = _.Class(function(self, action) {
+  var args = __args();
 
-    this.destructors = [];
-    this.placeholders = [];
-    this.children = [];
-    this.inserted = [];
-    this.mvc = Template.render_context.mvc;
-    var template_context = _.overlay({}, Template.context());
-    template_context.render_context = this;
+  this.destructors = [];
+  this.placeholders = [];
+  this.children = [];
+  this.inserted = [];
+  this.mvc = Template.render_context.mvc;
+  var template_context = _.overlay({}, Template.context());
+  template_context.render_context = this;
 
-    if(action) this.action = function() {
-      this.context = Object.create(template_context);
-      this.context.map = Object.create(template_context.map);
-      return action.apply(self, args);
-    };
+  if(action) this.action = function() {
+    this.context = Object.create(template_context);
+    this.context.map = Object.create(template_context.map);
+    return action.apply(self, args);
+  };
 
-    return this.render();
-  },
+  return this.render();
+}, {
   proto: {
     clear: function() {
       _.each(this.children, function(child) {
@@ -330,18 +329,6 @@ Template = _.Class({
         }).call(this, $let);
       }
 
-      if(Template.context().map.$in) {
-        if(typeof Template.context().map.$in === 'function') {
-          Template.context().data = Template.context().map.$in.call(this);
-          Template.scope({'#context': Template.context().data});
-          if(typeof Template.context().data != 'function') debugger;
-        } else {
-          Template.context().data = Template.navigate(Template.context().map.$in);
-          Template.scope({'#context': Template.context().data});
-        }
-        Template.context().map.$in = undefined;
-      }
-
       if(Template.context().map.$template) {
         var $template_src = Template.context().map.$template;
         var $template = Template.access(Template.context().map.$template);
@@ -363,7 +350,15 @@ Template = _.Class({
         Template.context().map.$as_context = Template.context();
         var template_fn = Template.definedTemplates[$template];
         if(!template_fn) { 
-          console.error('undefined template %o (%o)', $template, $template_src)
+          console.error('undefined template %o (%o in %o)', 
+            $template,
+            $template_src, { 
+              data: Template.context().data(), 
+              scope: _.map.call(this, Template.context().scope, _.result(function(v) { 
+                return v.call(this); 
+              }))
+            }
+          )
           debugger;
         }
         Template.opt(this, function() {
@@ -371,6 +366,19 @@ Template = _.Class({
         });
         return;
       }
+
+      if(Template.context().map.$in) {
+        if(typeof Template.context().map.$in === 'function') {
+          Template.context().data = Template.context().map.$in.call(this);
+          Template.scope({'#context': Template.context().data});
+          if(typeof Template.context().data != 'function') debugger;
+        } else {
+          Template.context().data = Template.navigate(Template.context().map.$in);
+          Template.scope({'#context': Template.context().data});
+        }
+        Template.context().map.$in = undefined;
+      }
+
 
       if(Template.context().map.$setup) {
         var $setup = Template.context().map.$setup;

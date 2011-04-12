@@ -339,8 +339,9 @@ _.profile = function(name, fn) {
   }
 };
 
-_.Class = function(options) {
-  return _.defineClass(options.init || function(){}, options.base, options.proto, options.classic);
+_.Class = function(init, options) {
+  if(typeof init !== 'function') { options = init; init = options.init; }
+  return _.defineClass(init || function(){}, options.base, options.proto, options.classic);
 };
 
 _.defineClass = function(klass, base, proto, statik) {
@@ -441,6 +442,14 @@ _.evil_format = function(format, args) {
 _.evil = function(format, args) {
   var code = _.evil_format(format, args);
   return eval(code);
+};
+
+// _.push, kind of like $implicit_array[] += $thing in php.
+_.push = function(thing, key, obj) {
+  if(thing[key] == undefined) thing[key] = [];
+  if(thing[key] instanceof Array) thing[key].push(obj);
+  else throw new Error("Can't push into a non-array!");
+  return thing[key];
 };
 
 // vim: set sw=2 ts=2 expandtab :

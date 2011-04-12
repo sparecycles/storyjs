@@ -71,29 +71,28 @@
       }
     });
 
-    Dialog = _.Class({ 
-      init: function(type, content, buttons, handler) {
-        var self = this;
-        var model = new MVC(_.overlay({}, content, {
-          type: type,
-          dialog: {
-            self: self,
-            buttons: buttons,
-            handler: function(arg) { 
-              var result = !handler || handler.call(this.arg);
-              if(result || undefined === result) {
-                this.close();
-              }
+    Dialog = _.Class(function(type, content, buttons, handler) {
+      var self = this;
+      var model = new MVC(_.overlay({}, content, {
+        type: type,
+        dialog: {
+          self: self,
+          buttons: buttons,
+          handler: function(arg) { 
+            var result = !handler || handler.call(this.arg);
+            if(result || undefined === result) {
+              this.close();
             }
           }
-        }));
-        this.data = model.data;
-        this.template = $("<div/>").appendTo($('body')).template(model, {
-          '.' : {
-            $template: '.type'
-          }
-        });
-      },
+        }
+      }));
+      this.data = model.data;
+      this.template = $("<div/>").appendTo($('body')).template(model, {
+        '.' : {
+          $template: '.type'
+        }
+      });
+    }, {
       proto: {
         is_open: function() {
           return this.hasOwnProperty('template');
@@ -108,7 +107,7 @@
       }
     });
 
-    Story.Node.Define('Dialog', function() {
+    Story.Plot.Define('Dialog', function() {
       var args = __args();
       // maybe reprocess button into story nodes.
       args[2] = _.map.call(this, args[2], function(button) {
@@ -117,10 +116,10 @@
           if(typeof action === 'function') {
             return action;
           } else if(action instanceof Array) {
-            var node = Story.Node.Build(Story.Sequence, action);
-            return Story.Node.register(this, node);
-          } else if(action instanceof Story.Node) {
-            return Story.Node.register(this, action);
+            var node = Story.Plot.Build(action);
+            return Story.Plot.Register(this, node);
+          } else if(action instanceof Story.Plot) {
+            return Story.Plot.Register(this, action);
           } else {
             return function() {
               this.scope.result = action;
@@ -135,7 +134,7 @@
         var dialog = Dialog.apply(null, args);
         var handler = dialog.data('dialog.handler')();
         dialog.data('dialog.handler', Story.callback(function(arg) {
-          if(!(arg instanceof Story.Node)) {
+          if(!(arg instanceof Story.Plot)) {
             var result = arg.call(this);
             if(result !== false) dialog.close();
           } else {

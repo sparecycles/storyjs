@@ -1,20 +1,181 @@
-Story = _.Class({
-  init: function() {
-    this.story = Story.Node.Build(Story.Group, __args());
-  }, 
+/**
+ | Module: Story.Core
+ | Requires: Layer
+ | Author: Adam Freidin
+ |
+-- Introduction
+ |
+ | Story is a framework for scripting behaviour over time.
+ | 
+ | Most programming languages lack the ability to keep track of
+ | actions over time, story provides patterns for dealing with 
+ | asynchronous tasks, user input, dialog flow, and other multi-stage
+ | problems which can't be addressed in one run of code.
+ |
+ | A particlar Story is made of a tree of plot nodes.  Internal nodes are container nodes
+ | which control execution, leaves are action nodes which perform tasks.
+ | Construction of the tree is the job of Story.Plot
+ |
+ | A Story must be told to function. A Story.Tale represents this.
+ | Any number of tales can be created from a single story.
+ | Representation and control of a live story is in the domain of Story.Tale
+ |
+-- API/Interface
+ | Each story plot node must handle a few basic functions:
+ |   setup       : constructor inside a tale 
+ |   update      : update inside a tale, return a truthy expression if the node is not "done".
+ |   teardown    : destructor inside a tale
+ |   handle(arg) : process events sent to the tale (this hasn't been used yet!)
+ |
+ | Let's illustrate with the two basic collection plot nodes: 
+ |   Story.Sequence and Story.Compound.
+ |
+ | A Sequence node acts as each of its children in turn, setting up and
+ | tearing down each one, and updating each one until it is "done".
+ | A sequeunce which has run off then end of its children is "done".
+ |
+ | A Compound acts as all of its children, all their setups and
+ | teardowns are done with the compound, and when all of them are
+ | "done" then the compound is too.  A common pairing for compounds
+ | is one node for delaying (fixed timeout, until click, until ajax
+ | response), and another for displaying.
+ |
+ | Sequence and Compound are foundational patterns, complementing each other
+ | like horizontal and vertical boxes in typesetting, unions and structs in 
+ | memory.  They are the time-vs-space tradeoff made useful.
+ |
+ | Example:
+ > TurnTheBackgroundBlueFor3Seconds = new Story({
+ >   setup: function() { 
+ >     var body = jQuery('body');
+ >     this.style = body[0].getAttribute('style');
+ >     body.css('background', 'blue');
+ >   },
+ >   teardown: function() {
+ >     var body = jQuery('body');
+ >     body[0].setAttribute('style', this.style);
+ >   }
+ > }, Story.Delay(3000));
+ >
+ > tale = TurnTheBackgroundBlueFor3Seconds.tell();
+ |
+ | Here we defined a custom action as just an object with setup and teardown calls,
+ | the argument list of a story is put into a Compound.  Arrays in a Compound are 
+ | automatically converted to Sequences, and vice-versa.  
+ |
+ | Any non-array object or function that doesn't satisfy 
+ | >>>thing instanceof Story.Plot<<< will | be converted to
+ | a Story.Action, a function will become the update, an object can
+ | specify a setup, teardown, update and/or handle as needed.
+ |
+ | You might like this pattern with saving and restoring css useful, but find specifying 
+ | the setup and teardown calls tedious.  By all means, please, define new Plot node types.
+ |
+ | But make them as general as possible, you won't regret it.
+ |
+ > Story.Plot.Define('WithStyle', function(selector, style) {
+ >   this.selector = selector;
+ >   this.style = style;
+ > }, {
+ >   setup: function() {
+ >     this.selector = typeof this.selector === 'function' 
+ >       ? this.selector() 
+ >       : jQuery(this.selector);
+ >     this.restore = _.map(this.selector, function(elem) { 
+ >       return elem.getAttribute('style');
+ >     });
+ >     _.each.call(this, this.selector, function(elem) {
+ >       jQuery(elem).css(this.style);
+ >     });
+ >   },
+ >   teardown: function() {
+ >     _.each.call(this, this.selector, function(elem, index) {
+ >       elem.setAttribute('style', this.restore[index]);
+ >     });
+ >   }
+ > });
+ |
+ | And then we can define the same story as
+ |
+ > new Story(
+ >   Story.WithStyle('body', { background: 'blue' }),
+ >   Story.Delay(3000)
+ > ).tell();
+ |
+ | Pretty slick, eh?
+ |
+ | Another blocking mechanism we can use is a check against a scope variable.
+ | A Tale has a scope, which is just a javascript object which can be used to pass 
+ | information between plot nodes.
+ | 
+ > ButtonExample = new Story({
+ >   setup: function() {
+ >     this.button = jQuery('<button/>').click(Story.callback(function() {
+ >       this.scope.done = true;
+ >     }).text('Hi!').appendTo(jQuery('body'));
+ >   }, 
+ >   teardown: function() { this.button.remove(); }
+ > }, Story.WithStyle('body', { background: 'blue' }), function() {
+ >   return !this.scope.done;
+ > });
+ |
+ | Communication between nodes is ideally limited to up, down to direct children, 
+ | across through scope variables, and to the entire tree by handle.  This should allow reuse of
+ | nodes across stories.
+ |
+ | Plot nodes can introduce new scopes, too, which inherit their parent scope and shadow it.
+ | (just like local variables).
+ |
+ | Stories are executed with a context, which means that the current tale is
+ | set in Story.Tale.context.tale, and the current node 
+ | is Story.Tale.context.device.
+ | Hopefully, you won't need to know that specifically,
+ | but that's what's preserved when
+ | you wrap a callback function with Story.callback.
+ | 
+-- Licence
+ | Copyright (c) 2011 Adam Freidin
+ |
+ | Permission is hereby granted, free of charge, to any person obtaining a copy
+ | of this software and associated documentation files (the "Software"), to deal
+ | in the Software without restriction, including without limitation the rights
+ | to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ | copies of the Software, and to permit persons to whom the Software is
+ | furnished to do so, subject to the following conditions:
+ |
+ | The above copyright notice and this permission notice shall be included in
+ | all copies or substantial portions of the Software.
+ |
+ | THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ | IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ | FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ | AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ | LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ | OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ | THE SOFTWARE.
+ */
+
+/* Class: Story
+ |
+ */
+Story = _.Class(function() {
+  this.plot = Story.Compound.apply(null, __args());
+}, {
   proto: {
-    tell: function(scope) { 
-      return new Story.Tale(this.story, scope);
+    tell: function(scope) {
+      var tale = new Story.Tale(this.plot, scope);
+      tale.update();
+      return tale;
     }
   },
   classic: {
     callback: function(fn) {
       var args = __args();
-      var phrase = Story.Tale.context.phrase;
-      if(typeof fn === 'string') fn = phrase[fn];
-      return Story.Tale.Context(phrase).bind(function() {
+      var device = Story.Tale.context.device;
+      if(typeof fn === 'string') fn = device[fn];
+      return Story.Tale.Context(device).bind(function() {
         try {
-          return fn.apply(Story.Tale.context.phrase, args.concat(__args()));
+          return fn.apply(Story.Tale.context.device, args.concat(__args()));
         } finally {
           Story.Tale.context.tale.update();
         }
@@ -26,149 +187,209 @@ Story = _.Class({
     handle: function(arg) {
       return Story.Tale.context.tale.handle(arg);
     },
-    Node: _.Class({
-      init: function() {
-        this.story = {
-          options: {}
-        };
-      },
+    Plot: _.Class(function(arg) {
+      this.story = {
+        options: {},
+        children: {}
+      };
+    }, {
       proto: {
         update: function() { return false; },
         setup: function() { },
         teardown: function() { },
         handle: function(arg) { },
-        Options: function(opts) { _.overlay(this.story.options, opts); return this; },
+        Options: function(opts) { 
+          var opts = _.overlay({}, opts);
+          if(opts.name) {
+            var own_scope = true;
+            var name = opts.name;
+            if(name.slice(0,1) === '+') name = name.slice(1);
+            else if(name.slice(0,1) === '-') {
+              own_scope = false;
+              name = name.slice(1);
+            } 
+            opts.name = name;
+            opts.own_scope = own_scope;
+          }
+          _.overlay(this.story.options, opts);
+          return this; 
+        },
         type: 'node'
       },
       classic: {
         Define: function(name, init, prototype, options) {
           // use eval to build function which has a decent name.
-          Story[name] = _.Class({ 
-            init: function() { 
-              if(options) this.Options(options); 
-              init.apply(this, arguments); 
-            },
-            base: Story.Node,
+          var base = Story.Plot;
+          if(/:/.test(name)) {
+            var parts = name.split(':');
+            base = Story[parts[1]];
+            name = parts[0];
+          }
+          if(Story[name]) throw new Error("Story." + name + " already defined!");
+          Story[name] = _.Class(function() { 
+            if(options) this.Options(options); 
+            init.apply(this, arguments); 
+          }, {
+            base: base,
             proto: _.overlay({}, prototype, { type: name })
           });
         },
-        register: function(parent, node) {
-          if(!(node instanceof Story.Node)) {
-            node = new Story.Action(node);
+        Register: function(parent, device, options) {
+          _.push(parent.story.children, (options || {}).name || "list", device);
+          if(!(device instanceof Story.Plot)) try {
+            device = new Story.Action(device);
+          } catch(ex) {
+            console.warn(
+              "story(plot): %o failed to convert to a Story.Plot", device
+            );
+            debugger;
+            device = new Story.Action(function() {
+              console.warn(
+                "story(tale): %o failed to convert to a Story.Plot", device
+              );
+              debugger;
+            });
           }
-          node.parent = parent;
-          return node;
+          device.story.parent = parent;
+          return device;
         },
-        Build: function(DefaultType, list) {
-          if(list.length > 0 && typeof list[0] === 'string') switch(list[0].slice(0,1)) {
+        Build: function(list) {
+          var type = "Sequence", 
+              name;
+          while(list.length > 0 && typeof list[0] === 'string') switch(list[0].slice(0,1)) {
           case '#':
-            return Story.Node.Build(Story[list[0].slice(1)], list.slice(1));
+            type = list[0].slice(1); 
+            list = list.slice(1);
+            break;
           case '@':
-            var subgroup = Story.Node.Build(DefaultType, list.slice(1));
-            subgroup.story.options.name = list[0].slice(1);
-            return subgroup;
+            name = list[0].slice(1);
+            list = list.slice(1);
+            break;
           default:
+            debugger
             // fall out
           }
-          return DefaultType.apply(null, list);
+          var plot = Story[type].apply(null, list);
+
+          if(name) plot.Options({name:name}); 
+          return plot;
         }
       }
     }),
-    Tale: _.Class({
-      init: function(story, scope) {
-        this.phrase = Object.create(story);
-        this.phrase.scope = Object.create(scope || {});
-        Story.Tale.Context(this.phrase, this).run('setup');
-        this.update();
-      },
+    Tale: _.Class(function(plot, scope) {
+      this.device = Object.create(plot);
+      this.scope = this.device.scope = scope || {};
+      Story.Tale.Context(this.device, this).run('setup');
+    }, {
       proto: {
         update: function() { 
-          if(!this.phrase) return false;
-          var result = Story.Tale.Context(this.phrase, this).run('update');
+          if(!this.device) return false;
+          var result = Story.Tale.Context(this.device, this).run('update');
           if(!result) this.stop();
           return result;
         },
         handle: function(arg) {
-          if(this.phrase) {
-            return Story.Tale.Context(this.phrase, this).run('handle', arg);
+          if(this.device) {
+            return Story.Tale.Context(this.device, this).run('handle', arg);
           }
         },
         stop: function() { 
-          if(!this.phrase) return false;
+          if(!this.device) return false;
 
           try {
-            return Story.Tale.Context(this.phrase, this).run('teardown');
+            return Story.Tale.Context(this.device, this).run('teardown');
           } finally {
-            delete this.phrase;
+            delete this.device;
           }
         },
       },
       classic: {
-        Context: _.Class({
-          init: function(phrase, tale) {
-            this.phrase = phrase || Story.Tale.context.phrase;
-            this.tale = tale || Story.Tale.context.tale;
-          },
+        Context: _.Class(function(device, tale) {
+          this.device = device || Story.Tale.context.device;
+          this.tale = tale || Story.Tale.context.tale;
+        }, {
           proto: {
             run: function(action) {
               if(typeof action !== 'function') {
-                action = this.phrase[action];
+                action = this.device[action];
               }
 
               return _.local.call(Story.Tale, {
                 context: this
-              }, action).apply(this.phrase, __args());
+              }, action).apply(this.device, __args());
             },
             bind: function(action) {
               if(typeof action !== 'function') {
-                action = this.phrase[action];
+                action = this.device[action];
               }
               var args = __args();
               return _.local.call(Story.Tale, {
                 context: this
               }, function() {
-                return action.apply(Story.Tale.context.phrase, args.concat(__args()));
+                return action.apply(Story.Tale.context.device, args.concat(__args()));
               });
             }
           }
         }),
-        update: function(phrase) {
-          return Story.Tale.Context(phrase).run('update');
-        },
-        instance_call: function(phrase, action) {
-          return Story.Tale.Context(phrase).run(action);
+        update: function(device) {
+          return Story.Tale.Context(device).run('update');
         },
         setup: function(node) {
           if(!node) { debugger; return null; }
-          var phrase = Object.create(node);
-          phrase.parent = Story.Tale.context.phrase;
-          if(node.story.options.name) {
-            phrase.scope = Object.create(phrase.parent.scope);
+          var device = Object.create(node);
+          device.parent = Story.Tale.context.device;
+          if(node.story.options.own_scope) {
+            device.scope = Object.create(device.parent.scope);
           } else {
-            phrase.scope = phrase.parent.scope; 
+            device.scope = device.parent.scope; 
           }
-          Story.Tale.Context(phrase).run('setup');
-          return phrase;
+          Story.Tale.Context(device).run('setup');
+          return device;
         },
-        teardown: function(phrase) {
-          Story.Tale.Context(phrase).run('teardown');
+        teardown: function(device) {
+          Story.Tale.Context(device).run('teardown');
         },
-        handle: function(phrase, arg) {
-          return Story.Tale.Context(phrase).run('handle', arg);
+        handle: function(device, arg) {
+          return Story.Tale.Context(device).run('handle', arg);
         }
       }
     }),
     find: function(name) {
-      var root = Story.Tale.context.phrase;
+      var root = Story.Tale.context.device;
       while(root.parent && root.story.options.name != name) {
         root = root.parent;
       }
       return root;
     },
     scope: function(name) {
-      if(name == '.') return Story.Tale.context.phrase.scope;
+      if(name == '.') return Story.Tale.context.device.scope;
       var node = Story.find(name);
-      return node ? node.scope : null;
+      return node ? node.scope : Story.Tale.context.tale.scope;
+    },
+    read: function(key, value) {
+      var scope = '.';
+      if(/@/.test(key)) {
+        var parts = key.split('@');
+        key = parts[0];
+        scope = parts[1];
+      }
+      scope = Story.Tale.scope(scope);
+      if(scope) return scope[key];
+      else throw new Error("Story.access: No scope named " + scope);
+    },
+    write: function(key, value) {
+      var scope = '.';
+      if(/@/.test(key)) {
+        var parts = key.split('@');
+        key = parts[0];
+        scope = parts[1];
+      }
+      scope = Story.Tale.scope(scope);
+      if(scope) {
+        var old_value = scope[key];
+        scope[key] = value;
+        return old_value;
+      } else throw new Error("Story.access: No scope named " + scope);
     }
   }
 });

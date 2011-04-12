@@ -1,22 +1,27 @@
 !!!XML
 !!!5
+- importjs = proc do |js|
+  - if @inline_javascript
+    :javascript
+      #{File.new("public/javascripts/#{js}.js").read}
+  - else
+    %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
+- importcss = proc do |css|
+  %link{:href=>"/stylesheets/#{css}.css", :type=>'text/css', :rel=>'stylesheet'}
+  
 %html
   %head
     %title
       = yield :title
     - @inline_javascript = false
     - %w[ jquery-1.5.1 jquery-1.5.1-hack json2 md5 ].each do |js|
-      - if @inline_javascript
-        :javascript
-          #{File.new("public/javascripts/#{js}.js").read}
-      - else
-        %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
+      - importjs.call js
     - %w[ layer story_core story mvc template ].each do |js|
-      - if @inline_javascript
-        :javascript
-          #{File.new("public/javascripts/story/#{js}.js").read}
-      - else
-        %script{:src=>"/javascripts/story/#{js}.js", :type=>'text/javascript'}
+      - importjs.call "story/#{js}"
+    - (yield :import_javascripts).split(/ +/).each do |file|
+      - importjs.call file
+    - (yield :import_stylesheets).split(/ +/).each do |file|
+      - importcss.call file
     = yield :head
     %style{:type=>'text/css'}
       = yield :style
