@@ -14,7 +14,7 @@ StateMachine = _.Class(function(init, states, transitions, self) {
       var when = parts[1];
       state = this.states[state] = this.states[state] || {};
       transitions = state.transitions = state.transitions || {};
-      transitions[when] = action;
+      transitions[when] = StateMachine.BuildTransition(action);
     });
   });
   if(this.states[init].enter) {
@@ -34,14 +34,21 @@ StateMachine = _.Class(function(init, states, transitions, self) {
       var ev = StateMachine.event;
       var current_state = this.states[this.state()] || { transitions: {} };
       var catch_state = this.states['*'] || { transitions: {} };
-      var action = current_state.transitions[ev] || current_state.transitions['*'];
-      if(!action) action = catch_state.transitions[ev] || catch_state.transitions['*'];
+      var action = 
+           current_state.transitions[ev] 
+        || current_state.transitions['*']
+        || catch_state.transitions[ev] 
+        || catch_state.transitions['*'];
 
       if(action) return action.apply(this.self, StateMachine.args);
     },
     send: function(ev) {
       var args = __args();
-      return _.local.call(StateMachine, { instance: this, event: ev, args: args }, function() {
+      return _.local.call(StateMachine, { 
+        instance: this,
+        event: ev,
+        args: __args() 
+      }, function() {
         return this._send();
       }).call(this);
     }
@@ -69,6 +76,77 @@ StateMachine = _.Class(function(init, states, transitions, self) {
       sm.state(state);
       current_state = sm.states[state] || {};
       if(current_state.enter) current_state.enter.apply(sm.self, StateMachine.args);
+    },
+    BuildTransition: function(action) {
+      try {
+        var transition_source = action;
+        if(typeof action == 'string') {
+          action = action.split(/;\s*/);
+        }
+        if(action instanceof Array) {
+          return function() {
+            _.each(this, function(act) {
+              act.apply(StateMachine.instance, StateMachine.args);
+            });
+          }.bind(_.map(action, function(act) {
+            switch(typeof act) {
+            case 'string':
+              var type = act.slice(0,1);
+              act = act.slice(1);
+              switch(type) {
+              case '!':
+                if(act == '') return function() { StateMachine.resend(); };
+                else {
+                  var args;
+                  var valid = false;
+                  act = act.replace(/^([^(]*)(\(.*\))?$/, 
+                    function(match, event, arg_list) {
+                      if(arg_list) {
+                        args = JSON.parse(
+                          '[' + (arg_list).slice(1,-1) + ']'
+                        );
+                      }
+                      valid = true;
+                      return event;
+                    }
+                  );
+                  if(!valid) {
+                    throw new Error('StateMachine: transition: invalid event');
+                  }
+                  return function() { 
+                    StateMachine.instance.send.apply(StateMachine.instance, 
+                      [_.evil_format(act, { event: StateMachine.event })]
+                      .concat(args || StateMachine.args)
+                    );
+                  };
+                }
+              case '[':
+                return function() { StateMachine.push(_.evil_format(act, { event: StateMachine.event })); };
+              case ']':
+                return function() { StateMachine.pop(); };
+              case '=':
+                return function() { StateMachine.select(_.evil_format(act, { event: StateMachine.event })); };
+              default:
+                throw new Error('Unknown act spec: %o', type+act);
+              }
+              break;
+            case 'function':
+              return act;
+            case 'object':
+              debugger;
+              return StateMachine.BuildTransition(act);
+            }
+          }));
+        }
+        if(action instanceof Function) return action;
+      } catch(ex) {
+        console.error('StateMachine: bad transition %o', transition_source); 
+      }
+
+      console.warning('StateMachine: weird transition %o', transition_source); 
+      return function() { 
+        console.warning('StateMachine: runing weird transition %o', transition_source); 
+      };
     }
   }
 });
@@ -139,31 +217,12 @@ jQuery.fn.litijs = function(src) {
       }
     }
   }, {
-    '*/*': function() {
-      StateMachine.select(StateMachine.event);
-      StateMachine.resend();
-    },
-    '*/note': function() {
-      StateMachine.select("code");
-      StateMachine.resend();
-    },
-    '*/source' : function() {
-      StateMachine.instance.send('note', '', true);
-      StateMachine.resend();
-    },
-    'note/source': function() {
-      StateMachine.pop();
-      StateMachine.push('source');
-      StateMachine.resend();
-    },
-    'code/note': function() {
-      StateMachine.push("note");
-      StateMachine.resend();
-    },
-    'source/*': function() {
-      StateMachine.pop();
-      StateMachine.resend();
-    },
+    '*/*': '=%{event}; !',
+    '*/note': '=code; !',
+    'code/note': '[note; !',
+    'note/source': ']; [source; !',
+    '*/source' : '!note("", true); !',
+    'source/*': ']; !',
     'note/note': function(note) {
       this.node.appendText(note);
     },
