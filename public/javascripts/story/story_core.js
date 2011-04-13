@@ -48,7 +48,7 @@
  > TurnTheBackgroundBlueFor3Seconds = new Story({
  >   setup: function() { 
  >     var body = jQuery('body');
- >     this.style = body[0].getAttribute('style');
+ >     this.style = body[0].getAttribute('style') || '';
  >     body.css('background', 'blue');
  >   },
  >   teardown: function() {
@@ -57,7 +57,13 @@
  >   }
  > }, Story.Delay(3000));
  >
- > tale = TurnTheBackgroundBlueFor3Seconds.tell();
+ >!jQuery('<button/>')
+ >! .appendTo(this)
+ >! .click(function() { 
+ >!   console.log('Hello World!');
+ >!   TurnTheBackgroundBlueFor3Seconds.tell(); 
+ >! })
+ >! .text('Try It!');
  |
  | Here we defined a custom action as just an object with setup and teardown calls,
  | the argument list of a story is put into a Compound.  Arrays in a Compound are 
@@ -97,10 +103,10 @@
  |
  | And then we can define the same story as
  |
- > new Story(
+ > WithStyleExample = new Story(
  >   Story.WithStyle('body', { background: 'blue' }),
  >   Story.Delay(3000)
- > ).tell();
+ > );
  |
  | Pretty slick, eh?
  |
@@ -112,12 +118,20 @@
  >   setup: function() {
  >     this.button = jQuery('<button/>').click(Story.callback(function() {
  >       this.scope.done = true;
- >     }).text('Hi!').appendTo(jQuery('body'));
+ >     })).text('End Test!').insertAfter(this.scope.where);
  >   }, 
  >   teardown: function() { this.button.remove(); }
  > }, Story.WithStyle('body', { background: 'blue' }), function() {
+ >   console.log('scope: %o (%o)', this.scope, !this.scope.done);
  >   return !this.scope.done;
  > });
+ >!jQuery('<button id="WithButtonTestButton"/>')
+ >! .appendTo(this)
+ >! .click(function() { 
+ >!   console.log('Hello World!');
+ >!   ButtonExample.tell({where: jQuery(this)}); 
+ >! })
+ >! .text('Try It!');
  |
  | Communication between nodes is ideally limited to up, down to direct children, 
  | across through scope variables, and to the entire tree by handle.  This should allow reuse of
@@ -138,6 +152,7 @@
  ? A story's root node is a compound.  This makes every time you see an array,
  ? a sequence.
  */
+if(window.Story) {debugger; alert('shit');}
 Story = _.Class(function() {
   this.plot = Story.Compound.apply(null, __args());
 }, {
@@ -391,7 +406,7 @@ Story = _.Class(function() {
  ? Context().run(function() { ... }) executes that action with the context set.
  */
             run: function(action) {
-              this.bind(action).apply(this, __args());
+              return this.bind(action).apply(this, __args());
             },
 /*
  ? Context().bind(function() { ... }) returns a function 

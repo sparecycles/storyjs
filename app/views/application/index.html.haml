@@ -142,5 +142,5 @@
     false && $('<div/>').appendTo('body').template(canvas_mvc, {
       '.' : { $template: '=image-loader' }
     });
-    $('body').litijs('javascripts/story/story_core.js');
+    $(function() { $('body').litijs('javascripts/story/story_core.js'); });
 -# vim: set sw=2 ts=2 expandtab :

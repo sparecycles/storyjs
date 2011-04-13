@@ -120,10 +120,16 @@ jQuery.fn.litijs = function(src) {
     },
     example: {
       enter: function() {
+        this.example_code = "";
         this.node = $('<pre class="prettyprint"/>').appendTo(this.node);
       },
       leave: function() {
         this.node = this.node.parent();
+        try {
+          new Function('{' + this.example_code + '}').call($('<div class="nocode"/>').appendTo(this.node));
+        } catch(ex) {
+          console.log('Failed to eval: %o: %o:%o', this.example_code, ex, ex.stack);
+        }
       }
     },
     file: {
@@ -178,8 +184,13 @@ jQuery.fn.litijs = function(src) {
       this.node.appendText(line);
     },
     'example/example': function(line) {
-      this.node.appendText(line);
-      this.node.append($('<br/>'));
+      if(line.slice(0,1) == '!') {
+        line = line.slice(1);
+      } else {
+        this.node.appendText(line);
+        this.node.append($('<br/>'));
+      }
+      this.example_code += line;
     },
     'title/title': function(title) {
       this.node.appendText(title);
@@ -193,14 +204,18 @@ jQuery.fn.litijs = function(src) {
       ) 
   });
   if(!src) src = '/javascripts/story/story_core.js';
-  jQuery.get(src, function(result, status) {
-    if(status == 'success') {
-      _.each.call(this, jQuery.fn.litijs.parse(result), function(part) {
-        emit.send(part.type, part.text);
-      });
-      emit.send("text", "");
-      prettyPrint(); 
-    }
+  jQuery.ajax({
+    url:src, 
+    success:function(result, status) {
+      if(status == 'success') {
+        _.each.call(this, jQuery.fn.litijs.parse(result), function(part) {
+          emit.send(part.type, part.text);
+        });
+        emit.send("text", "");
+        prettyPrint(); 
+      }
+    }, 
+    dataType: 'html'
   });
 };
 jQuery.fn.litijs.parse = function(source) {

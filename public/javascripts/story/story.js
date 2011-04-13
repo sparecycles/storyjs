@@ -34,7 +34,7 @@ Story.Plot.Define('Action', function(device) {
 
     if(device.name) this.Options({name:device.name});
   }
-}, { });
+}, {});
 
 Story.Plot.Define('Sequence', function() {
   this.steps = [];

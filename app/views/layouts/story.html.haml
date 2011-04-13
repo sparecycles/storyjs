@@ -19,9 +19,9 @@
     - %w[ layer story_core story mvc template ].each do |js|
       - importjs.call "story/#{js}"
     - (yield :import_javascripts).split(/ +/).each do |file|
-      - importjs.call file
+      - importjs.call file.strip
     - (yield :import_stylesheets).split(/ +/).each do |file|
-      - importcss.call file
+      - importcss.call file.strip
     = yield :head
     %style{:type=>'text/css'}
       = yield :style
