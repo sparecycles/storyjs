@@ -55,6 +55,12 @@
  >!     $(this).attr('disabled', true);
  >!   });
  >! };
+ >! function TryIt(story) {
+ >!   jQuery('<button/>')
+ >!   .appendTo(this)
+ >!   .text('Try It!')
+ >!   .click_and_tell(story);
+ >! }
  > TurnTheBackgroundBlueFor3Seconds = new Story({
  >   setup: function() { 
  >     var body = jQuery('body');
@@ -66,10 +72,7 @@
  >     body[0].setAttribute('style', this.style);
  >   }
  > }, Story.Delay(3000));
- >! jQuery('<button/>')
- >! .appendTo(this)
- >! .text('Try It!')
- >! .click_and_tell(TurnTheBackgroundBlueFor3Seconds);
+ >! TryIt.call(this, TurnTheBackgroundBlueFor3Seconds);
  |
  | Here we defined a custom action as just an object with setup and teardown calls,
  | the argument list of a story is put into a Compound.  Arrays in a Compound are 
@@ -113,6 +116,7 @@
  >   Story.WithStyle('body', { color: '#EB84B3' }),
  >   Story.Delay(3000)
  > );
+ >! TryIt.call(this, WithStyleExample);
  |
  | Pretty slick, eh?
  |
@@ -130,10 +134,7 @@
  > }, Story.WithStyle('body', { color: '#EB84B3' }), function() {
  >   return !this.scope.done;
  > });
- >!jQuery('<button id="WithButtonTestButton"/>')
- >! .appendTo(this)
- >! .click_and_tell(ButtonExample) 
- >! .text('Try It!');
+ >! TryIt.call(this, ButtonExample);
  |
  | Communication between nodes is ideally limited to up, down to direct children, 
  | across through scope variables, and to the entire tree by handle.  This should allow reuse of
