@@ -10,9 +10,11 @@ html{
   width:760px;
 }
 .litijs-container .code pre {
-  font-size:16px;
   margin: 0;
-  padding: 0;
+  -moz-box-shadow: 4px 0 3px -1px;
+  padding-left: 35px;
+  margin-right:5px;
+  -webkit-box-shadow: 4px 0 3px -1px;
   border: none;
 }
 .litijs-container .wrapper .note { 
@@ -22,7 +24,7 @@ html{
   -webkit-user-select: none;
 }
 .litijs-container .wrapper {
-  overflow:auto;
+  overflow:hidden;
   width:980px;
 }
 .litijs-container{
@@ -30,5 +32,11 @@ html{
   margin:0 auto;
 }
 pre.prettyprint {
-      background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 transparent;
-    }
+    background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 transparent;
+    font-size: 14px;
+    -moz-box-shadow: 3px 3px 3px;
+    -webkit-box-shadow: 3px 3px 3px;
+    line-height: 20px;
+    padding-left: 30px;
+    padding-top: 0;
+}
