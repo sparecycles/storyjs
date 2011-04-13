@@ -168,7 +168,7 @@ Story = _.Class(function() {
       return tale;
     }
   },
-classic: { 
+  classic: { 
 /* 
  ? Static functions for Story 
  */
