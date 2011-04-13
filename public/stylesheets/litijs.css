@@ -11,10 +11,11 @@ body {
   width:740px;
   margin:0;
   padding:0;
-  -moz-box-shadow: 4px 0 3px -1px;
+  -moz-box-shadow: 4px 0 3px -1px #666;
   padding-left: 35px;
   margin-right: 5px;
-  -webkit-box-shadow: 4px 0 3px -1px;
+  -webkit-box-shadow: 4px 0 3px -1px #666;
+  box-shadow: 4px 0 3px -1px #666;
   border: none;
 }
 .litijs-container .wrapper .note{
@@ -39,10 +40,11 @@ h1{
     text-shadow: 1px 1px 1px #CCCCCC;
 }
 .litijs-container pre {
-	background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 yellow;
+    background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 white;
     font-size: 14px;
-    -moz-box-shadow: 3px 3px 3px;
-    -webkit-box-shadow: 3px 3px 3px;
+    -moz-box-shadow: 3px 3px 3px #666;
+    -webkit-box-shadow: 3px 3px 3px #666;
+    box-shadow: 3px 3px 3px #666;
     line-height: 20px;
     padding-left: 30px;
     padding-top: 0;
