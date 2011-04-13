@@ -84,8 +84,9 @@ jQuery.fn.litijs = function(src) {
       }
     },
     note: {
-      enter: function() {
+      enter: function(text, auto) {
         this.node = $('<div class="note"/>').appendTo(this.node);
+        this.remove_one_source_line = !auto;
       },
       leave: function() {
         this.node = this.node.parent();
@@ -129,11 +130,12 @@ jQuery.fn.litijs = function(src) {
       StateMachine.resend();
     },
     'note/source': function() {
+      debugger;
       StateMachine.select(StateMachine.event);
       StateMachine.resend();
     },
     '*/source' : function() {
-      StateMachine.instance.send('note', '');
+      StateMachine.instance.send('note', '', true);
       StateMachine.resend();
     },
     '*/note': function() {
@@ -150,6 +152,11 @@ jQuery.fn.litijs = function(src) {
       this.node.appendText(note);
     },
     'source/source': function(source) {
+      if(this.remove_one_source_line) {
+        var lines = source.split('\n');
+        if(!/[^\s]/.test(lines[0])) source = lines.slice(1).join('\n');
+        delete this.remove_one_source_line;
+      }
       this.node.appendText(source);
     },
     'text/space': function() {
@@ -165,9 +172,6 @@ jQuery.fn.litijs = function(src) {
     },
     'title/title': function(title) {
       this.node.appendText(title);
-    },
-    'source/source': function(source) {
-      this.node.appendText(source);
     }
   }, { 
     node: 

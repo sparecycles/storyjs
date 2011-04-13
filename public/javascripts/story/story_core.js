@@ -170,7 +170,7 @@ Story = _.Class(function() {
   },
 classic: { 
 /* 
- ? static functions for Story 
+ ? Static functions for Story 
  */
     callback: function(fn) {
       var args = __args();
