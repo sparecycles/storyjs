@@ -130,7 +130,6 @@ jQuery.fn.litijs = function(src) {
       StateMachine.resend();
     },
     'note/source': function() {
-      debugger;
       StateMachine.select(StateMachine.event);
       StateMachine.resend();
     },
