@@ -1,6 +1,7 @@
-html {
+body {
   font-family:"HelveticaNeue-Light","Helvetica Neue",Helvetica,Arial,Verdana,sans-serif;
   color:#333;
+  background-color:#FAFAFF;
 }
 .litijs p{
   font-weight:300;
@@ -38,7 +39,7 @@ h1{
     text-shadow: 1px 1px 1px #CCCCCC;
 }
 .litijs-container pre {
-    background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 transparent;
+	background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 yellow;
     font-size: 14px;
     -moz-box-shadow: 3px 3px 3px;
     -webkit-box-shadow: 3px 3px 3px;

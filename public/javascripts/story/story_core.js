@@ -5,7 +5,7 @@
  |
 -- Introduction
  |
- | Story is a framework for scripting behaviour over time.
+ | >{Story} is a framework for scripting behaviour over time.
  | 
  | Most programming languages lack the ability to keep track of
  | actions over time, story provides patterns for dealing with 
@@ -17,7 +17,7 @@
  | leaves are action nodes which perform tasks.
  | Construction of the tree is the job of Story.Plot
  |
- | A Story must be told to function. A Story.Tale represents this.
+ | A Story must be >{Story.tell|told} to function. A Story.Tale represents this.
  | Any number of tales can be created from a single story.
  | Representation and control of a live story is in the domain of Story.Tale
  |
@@ -57,7 +57,6 @@
  >     body[0].setAttribute('style', this.style);
  >   }
  > }, Story.Delay(3000));
- >
  >!jQuery('<button/>')
  >! .appendTo(this)
  >! .click(function() { 
@@ -146,18 +145,14 @@
  | you wrap a callback function with Story.callback.
  |
  */
-/* 
- ? A story's root node is a compound.  This makes every time you see an array,
- ? a sequence.
- */
-if(window.Story) {debugger; alert('shit');}
+ 
+/// @{Story}
+/// A story's root node is a compound. To make a sequence, pass an array.
 Story = _.Class(function() {
   this.plot = Story.Compound.apply(null, __args());
 }, {
   proto: {
-/*
- ? Instantiates a story Tale from a story, and updates it once.
- */
+    /// @{Story.tell} begins telling a tale, update it and return it
     tell: function(scope) {
       var tale = new Story.Tale(this.plot, scope);
       tale.update();
@@ -165,11 +160,9 @@ Story = _.Class(function() {
     }
   },
   classic: { 
-/*
- ? Story.callback wraps a function so it can restore tale context when
- ? it is executed.  It preserves static methods of Story and "this" 
- ? inside the function.  After running, the story will be updated.
- */
+/// @{Story.callback} wraps a function so it can restore tale context when
+/// it is executed.  It preserves static methods of Story and "this" 
+/// inside the function.  After running, the story will be updated.
     callback: function(fn) {
       var args = __args();
       var device = Story.Tale.context.device;
@@ -185,22 +178,22 @@ Story = _.Class(function() {
         }
       });
     },
-/*
- ? Story.update runs the update function again on the active tale.
- */
+///
+/// Story.update runs the update function again on the active tale.
+///
     update: function() {
       return Story.Tale.context.tale.update();
     },
-/*
- ? handle propagates handle(arg) calls through all the active plot nodes.
- */
+///
+///handle propagates handle(arg) calls through all the active plot nodes.
+///
     handle: function(arg) {
       return Story.Tale.context.tale.handle(arg);
     },
-/*
- ? Plot is responsible for definition of nodes and story construction.
- ? It is also the root class of all story nodes.
- */
+///
+///Plot is responsible for definition of nodes and story construction.
+///It is also the root class of all story nodes.
+///
     Plot: _.Class(function(arg) {
       this.story = {
         options: {},
@@ -208,18 +201,14 @@ Story = _.Class(function() {
       };
     }, {
       proto: {
-/*
- ? These are the default implementations of 
- ? plot node functions. (used by Story.Tale)
- */
+        /// These are the default implementations of 
+        /// plot node functions. (used by Story.Tale)
         update: function() { return false; },
         setup: function() { },
         teardown: function() { },
         handle: function(arg) { },
-/*
- ? Options is a setup function,
- ? the only option right now is 'name'.
- */
+        /// Options is a setup function,
+        /// the only option right now is 'name'.
         Options: function(opts) { 
           var opts = _.overlay({}, opts);
           if(opts.name) {
@@ -240,10 +229,8 @@ Story = _.Class(function() {
         type: 'node'
       },
       classic: {
-/*
- ? Story.Plot.Define(name, constructor, {...proto...}}
- ? Defines a new plot node type, which you can use as Story[name].
- */
+        /// Story.Plot.Define(name, constructor, {...proto...}}
+        /// Defines a new plot node type, which you can use as Story[name].
         Define: function(name, init, prototype, options) {
           var base = Story.Plot;
           if(/:/.test(name)) {
@@ -262,13 +249,11 @@ Story = _.Class(function() {
             proto: _.overlay({}, prototype, { type: name })
           });
         },
-/*
- ? Story.Plot.Register()
- ? Registers a node, and ensures that it IS a node.
- ? Registration doesn't do anything critical yet,
- ? but it provides the place we'll use to build
- ? visual debuggers and stuff.
- */
+        /// Story.Plot.Register()
+        /// Registers a node, and ensures that it IS a node.
+        /// Registration doesn't do anything critical yet,
+        /// but it provides the place we'll use to build
+        /// visual debuggers and stuff.
         Register: function(parent, device, options) {
           _.push(parent.story.children, 
             (options || {}).name || "list", 
@@ -297,12 +282,10 @@ Story = _.Class(function() {
           device.story.parent = parent;
           return device;
         },
-/*
- ? Build takes an array and makes it into Sequence
- ? leading elements of the array which are strings beginning with
- ? '#' and '@' allow the type of container and the name of the
- ? array, respectively, to be easily specified.
- */
+        /// Build takes an array and makes it into Sequence
+        /// leading elements of the array which are strings beginning with
+        /// '#' and '@' allow the type of container and the name of the
+        /// array, respectively, to be easily specified.
         Build: function(list) {
           var type = "Sequence", 
               name;
@@ -328,18 +311,14 @@ Story = _.Class(function() {
         }
       }
     }),
-/*
- ? The Story Tale class is responsible for running stories.
- */
+    /// The Story Tale class is responsible for running stories.
     Tale: _.Class(function(plot, scope) {
       this.device = Object.create(plot);
       this.scope = this.device.scope = scope || {};
       Story.Tale.Context(this.device, this).run('setup');
     }, {
       proto: {
-/*
- ? A tale knows how to update itself.
- */
+        /// A tale knows how to update itself.
         update: function() { 
           if(!this.device) return false;
 
@@ -370,9 +349,13 @@ Story = _.Class(function() {
         }
       },
       classic: {
+        /// Use Story.Tale.update(device)
+        /// to update nodes from your own Story.Plot.Define nodes.
         update: function(device) {
           return Story.Tale.Context(device).run('update');
         },
+        /// Use Story.Tale.setup(node)
+        /// to get a device for that node.
         setup: function(node) {
           if(!node) { debugger; return null; }
           var device = Object.create(node);
@@ -385,31 +368,32 @@ Story = _.Class(function() {
           Story.Tale.Context(device).run('setup');
           return device;
         },
+        /// Use Story.Tale.teardown(device)
+        /// to destroy devices that you setup.
         teardown: function(device) {
           Story.Tale.Context(device).run('teardown');
         },
+        /// Use Story.Tale.handle(device, arg)
+        /// to pass on handle(...) to your active device(s).
         handle: function(device, arg) {
           return Story.Tale.Context(device).run('handle', arg);
         },
-/*
- ? Story.Tale.Context maintains the active tale and the active plot device.
- ? An instance of it is set in Story.Tale.context when a tale is being told.
- */
+        /// Story.Tale.Context maintains the active 
+        /// tale and the active plot device.
+        /// An instance of it is set in Story.Tale.context 
+        /// when a tale is being told.
         Context: _.Class(function(device, tale) {
           this.device = device || Story.Tale.context.device;
           this.tale = tale || Story.Tale.context.tale;
         }, {
           proto: {
-/*
- ? Context().run(function() { ... }) executes that action with the context set.
- */
+            /// Context().run(function() { ... }) 
+            /// executes that action with the context set.
             run: function(action) {
               return this.bind(action).apply(this, __args());
             },
-/*
- ? Context().bind(function() { ... }) returns a function 
- ? which executes with the context.
- */
+            /// Context().bind(function() { ... }) returns a function 
+            /// which executes with the context.
             bind: function(action) {
               if(typeof action !== 'function') {
                 action = this.device[action];
@@ -428,10 +412,8 @@ Story = _.Class(function() {
         })
       }
     }),
-/*
- ? Finds a parent node with the specified name.
- ? Sometimes you gotta mess with things directly.
- */
+    /// Finds a parent node with the specified name.
+    /// Sometimes you gotta mess with things directly.
     find: function(name) {
       var root = Story.Tale.context.device;
       while(root.parent && root.story.options.name != name) {
@@ -439,18 +421,14 @@ Story = _.Class(function() {
       }
       return root;
     },
-/*
- ? Finds a parent scope with the specified name.
- ? If it's not found, return the root scope.
- */
+    /// Finds a parent scope with the specified name.
+    /// If it's not found, return the root scope.
     scope: function(name) {
       if(name == '.') return Story.Tale.context.device.scope;
       var node = Story.find(name);
       return node ? node.scope : Story.Tale.context.tale.scope;
     },
-/*
- ? Reads a key (or "key@scope") from the scope.
- */
+    /// Reads a key (or "key@scope") from the scope.
     read: function(key) {
       var scope = '.';
       if(/@/.test(key)) {
@@ -462,9 +440,7 @@ Story = _.Class(function() {
       if(scope) return scope[key];
       else throw new Error("Story.access: No scope named " + scope);
     },
-/*
- ? Writes a value to key (or "key@scope") to the scope.
- */
+    /// Writes a value to key (or "key@scope") to the scope.
     write: function(key, value) {
       var scope = '.';
       if(/@/.test(key)) {
