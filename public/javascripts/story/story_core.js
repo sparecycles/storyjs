@@ -12,8 +12,9 @@
  | asynchronous tasks, user input, dialog flow, and other multi-stage
  | problems which can't be addressed in one run of code.
  |
- | A particular Story is made of a tree of plot nodes.  Internal nodes are container nodes
- | which control execution, leaves are action nodes which perform tasks.
+ | A particular Story is made of a tree of plot nodes.
+ | Internal nodes are container nodes which control execution, 
+ | leaves are action nodes which perform tasks.
  | Construction of the tree is the job of Story.Plot
  |
  | A Story must be told to function. A Story.Tale represents this.
@@ -60,7 +61,6 @@
  >!jQuery('<button/>')
  >! .appendTo(this)
  >! .click(function() { 
- >!   console.log('Hello World!');
  >!   TurnTheBackgroundBlueFor3Seconds.tell(); 
  >! })
  >! .text('Try It!');
@@ -122,13 +122,11 @@
  >   }, 
  >   teardown: function() { this.button.remove(); }
  > }, Story.WithStyle('body', { background: 'blue' }), function() {
- >   console.log('scope: %o (%o)', this.scope, !this.scope.done);
  >   return !this.scope.done;
  > });
  >!jQuery('<button id="WithButtonTestButton"/>')
  >! .appendTo(this)
  >! .click(function() { 
- >!   console.log('Hello World!');
  >!   ButtonExample.tell({where: jQuery(this)}); 
  >! })
  >! .text('Try It!');
