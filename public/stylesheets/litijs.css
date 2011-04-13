@@ -60,9 +60,20 @@ h1{
 button{
     -moz-border-radius: 0.5em 0.5em 0.5em 0.5em;
     -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: -moz-linear-gradient(center top , #888888, #575757) repeat scroll 0 0 transparent;
+    -webkit-border-radius: 0.5em 0.5em 0.5em 0.5em;
+    -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: -webkit-gradient(
+       linear,
+       left bottom,
+       left top,
+       color-stop(0, #575757),
+       color-stop(.5, #888888)
+    ) repeat scroll 0 0 transparent;
+    border-radius: 0.5em 0.5em 0.5em 0.5em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     display: inline-block;
-    font: 14px/100% Arial,Helvetica,sans-serif;
     margin: 0 2px;
     outline: medium none;
     text-align: center;
@@ -70,7 +81,24 @@ button{
     text-decoration: none;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
     vertical-align: baseline;
-    background: -moz-linear-gradient(center top , #888888, #575757) repeat scroll 0 0 transparent;
     border: 1px solid #555555;
     color: #E9E9E9;
+}
+button:active {
+    -moz-border-radius: 0.5em 0.5em 0.5em 0.5em;
+    -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: -moz-linear-gradient(center top , #575757, #888888) repeat scroll 0 0 transparent;
+    -webkit-border-radius: 0.5em 0.5em 0.5em 0.5em;
+    -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    background: -webkit-gradient(
+       linear,
+       left bottom,
+       left top,
+       color-stop(0, #888888),
+       color-stop(.5, #575757)
+    ) repeat scroll 0 0 transparent;
+}
+
+button:disabled {
+  
 }
