@@ -65,7 +65,7 @@
  >   setup: function() { 
  >     var body = jQuery('body');
  >     this.style = body[0].getAttribute('style') || '';
- >     body.css('color', '#EB84B3');
+ >     body.css('color', '#8B00FF');
  >   },
  >   teardown: function() {
  >     var body = jQuery('body');
@@ -113,7 +113,7 @@
  | And then we can define the same story as
  |
  > WithStyleExample = new Story(
- >   Story.WithStyle('body', { color: '#EB84B3' }),
+ >   Story.WithStyle('body', { color: '#8B00FF' }),
  >   Story.Delay(3000)
  > );
  >! TryIt.call(this, WithStyleExample);
@@ -131,7 +131,7 @@
  >     })).text('End Test!').insertAfter(this.scope.where);
  >   }, 
  >   teardown: function() { this.button.remove(); }
- > }, Story.WithStyle('body', { color: '#EB84B3' }), function() {
+ > }, Story.WithStyle('body', { color: '#8B00FF' }), function() {
  >   return !this.scope.done;
  > });
  >! TryIt.call(this, ButtonExample);
