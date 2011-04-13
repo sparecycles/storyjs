@@ -50,7 +50,7 @@
  >   setup: function() { 
  >     var body = jQuery('body');
  >     this.style = body[0].getAttribute('style') || '';
- >     body.css('background', 'blue');
+ >     body.css('color', '#EB84B3');
  >   },
  >   teardown: function() {
  >     var body = jQuery('body');
@@ -106,7 +106,7 @@
  | And then we can define the same story as
  |
  > WithStyleExample = new Story(
- >   Story.WithStyle('body', { background: 'blue' }),
+ >   Story.WithStyle('body', { color: '#EB84B3' }),
  >   Story.Delay(3000)
  > );
  |
@@ -123,7 +123,7 @@
  >     })).text('End Test!').insertAfter(this.scope.where);
  >   }, 
  >   teardown: function() { this.button.remove(); }
- > }, Story.WithStyle('body', { background: 'blue' }), function() {
+ > }, Story.WithStyle('body', { color: '#EB84B3' }), function() {
  >   return !this.scope.done;
  > });
  >!jQuery('<button id="WithButtonTestButton"/>')

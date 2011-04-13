@@ -68,7 +68,7 @@ button{
        left bottom,
        left top,
        color-stop(0, #575757),
-       color-stop(.5, #888888)
+       color-stop(.8, #888888)
     ) repeat scroll 0 0 transparent;
     border-radius: 0.5em 0.5em 0.5em 0.5em;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -95,7 +95,7 @@ button:active {
        left bottom,
        left top,
        color-stop(0, #888888),
-       color-stop(.5, #575757)
+       color-stop(.8, #575757)
     ) repeat scroll 0 0 transparent;
 }
 
