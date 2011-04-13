@@ -1,31 +1,33 @@
-html{
+html {
   font-family:"HelveticaNeue-Light","Helvetica Neue",Helvetica,Arial,Verdana,sans-serif;
-  color:#666;
+  color:#333;
 }
 .litijs p{
   font-weight:300;
 }
-.litijs-container .wrapper .code {
+.litijs-container .wrapper pre {
   float:right;
-  width:760px;
-}
-.litijs-container .code pre {
-  margin: 0;
+  width:740px;
+  margin:0;
+  padding:0;
   -moz-box-shadow: 4px 0 3px -1px;
   padding-left: 35px;
-  margin-right:5px;
+  margin-right: 5px;
   -webkit-box-shadow: 4px 0 3px -1px;
   border: none;
 }
-.litijs-container .wrapper .note { 
+.litijs-container .wrapper .note{
   float:left;
   width:200px;
   font-size:14px;
   -webkit-user-select: none;
 }
-.litijs-container .wrapper {
+.litijs-container .wrapper{
   overflow:hidden;
   width:980px;
+}
+.litijs-container .section{
+  display: block;
 }
 .litijs-container{
   width:1000px;
@@ -35,7 +37,7 @@ h1{
     font-weight: 700;
     text-shadow: 1px 1px 1px #CCCCCC;
 }
-pre.prettyprint {
+.litijs-container pre {
     background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 transparent;
     font-size: 14px;
     -moz-box-shadow: 3px 3px 3px;
@@ -43,4 +45,8 @@ pre.prettyprint {
     line-height: 20px;
     padding-left: 30px;
     padding-top: 0;
+}
+
+.litijs-container .wrapper:last-child pre {
+  /* background: red;*/
 }

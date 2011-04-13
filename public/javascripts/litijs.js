@@ -75,9 +75,17 @@ StateMachine = _.Class(function(init, states, transitions, self) {
 
 jQuery.fn.litijs = function(src) {
   var emit = new StateMachine('file', {
+    code: {
+      enter: function() {
+        this.node = $('<div class="section"/>').appendTo(this.node);
+      },
+      leave: function() {
+        this.node = this.node.parent();
+      }
+    },
     source: {
       enter: function() {
-        this.node = $('<pre class="prettyprint"/>').appendTo(this.node).wrap('<div class="code"/>');
+        this.node = $('<pre class="prettyprint"/>').appendTo(this.node);
       },
       leave: function() {
         this.node = this.node.parent().parent();
@@ -85,7 +93,7 @@ jQuery.fn.litijs = function(src) {
     },
     note: {
       enter: function(text, auto) {
-        this.node = $('<div class="note"/>').appendTo(this.node);
+        this.node = $('<div class="note"/>').appendTo(this.node).wrap('<div class="wrapper"/>');
         this.remove_one_source_line = !auto;
       },
       leave: function() {
@@ -129,22 +137,25 @@ jQuery.fn.litijs = function(src) {
       StateMachine.select(StateMachine.event);
       StateMachine.resend();
     },
-    'note/source': function() {
-      StateMachine.select(StateMachine.event);
+    '*/note': function() {
+      StateMachine.select("code");
       StateMachine.resend();
     },
     '*/source' : function() {
       StateMachine.instance.send('note', '', true);
       StateMachine.resend();
     },
-    '*/note': function() {
-      this.node = $('<div class="wrapper"/>').appendTo(this.node);
-      StateMachine.select(StateMachine.event);
+    'note/source': function() {
+      StateMachine.pop();
+      StateMachine.push('source');
+      StateMachine.resend();
+    },
+    'code/note': function() {
+      StateMachine.push("note");
       StateMachine.resend();
     },
     'source/*': function() {
-      StateMachine.select('limbo');
-      this.node = this.node.parent();
+      StateMachine.pop();
       StateMachine.resend();
     },
     'note/note': function(note) {
@@ -157,6 +168,7 @@ jQuery.fn.litijs = function(src) {
         delete this.remove_one_source_line;
       }
       this.node.appendText(source);
+      StateMachine.pop();
     },
     'text/space': function() {
       StateMachine.select('space');
@@ -186,6 +198,7 @@ jQuery.fn.litijs = function(src) {
       _.each.call(this, jQuery.fn.litijs.parse(result), function(part) {
         emit.send(part.type, part.text);
       });
+      emit.send("text", "");
       prettyPrint(); 
     }
   });
