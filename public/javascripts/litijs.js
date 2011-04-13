@@ -77,15 +77,15 @@ jQuery.fn.litijs = function(src) {
   var emit = new StateMachine('file', {
     source: {
       enter: function() {
-        this.node = $('<pre class="prettyprint"/>').appendTo(this.node);
+        this.node = $('<pre class="prettyprint"/>').appendTo(this.node).wrap('<div class="code"/>');
       },
       leave: function() {
-        this.node = this.node.parent();
+        this.node = this.node.parent().parent();
       }
     },
     note: {
       enter: function() {
-        this.node = $('<pre class="note"/>').appendTo(this.node);
+        this.node = $('<div class="note"/>').appendTo(this.node);
       },
       leave: function() {
         this.node = this.node.parent();
@@ -179,7 +179,7 @@ jQuery.fn.litijs = function(src) {
       _.each.call(this, jQuery.fn.litijs.parse(result), function(part) {
         emit.send(part.type, part.text);
       });
-      prettyPrint(); 
+//    prettyPrint(); 
     }
   });
 };

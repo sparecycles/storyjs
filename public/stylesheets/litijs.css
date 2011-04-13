@@ -1,3 +1,12 @@
-.litijs .wrapper {
-  background: red;
+.wrapper .prettyprint{
+  float:right;
+  width:470px;
+}
+.wrapper .note{
+  float:left;
+  width:480px;
+}
+.wrapper{
+  overflow:auto;
+  width:960px;
 }
