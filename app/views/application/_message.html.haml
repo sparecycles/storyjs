@@ -34,7 +34,7 @@
     Message = _layer.Class(function(content) {
       var self = this;
       var model = new MVC({
-        message: content,
+        message: content
       });
       this.data = model.data;
       this.template = $("<div/>").appendTo($('body')).template(model, {

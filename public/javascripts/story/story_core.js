@@ -367,7 +367,7 @@ Story = _.Class(function() {
           } finally {
             delete this.device;
           }
-        },
+        }
       },
       classic: {
         update: function(device) {

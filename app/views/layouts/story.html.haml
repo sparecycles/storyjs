@@ -13,7 +13,7 @@
   %head
     %title
       = yield :title
-    - @inline_javascript = false
+    - @inline_javascript = true
     - %w[ jquery-1.5.1 jquery-1.5.1-hack json2 md5 ].each do |js|
       - importjs.call js
     - %w[ layer story_core story mvc template ].each do |js|
