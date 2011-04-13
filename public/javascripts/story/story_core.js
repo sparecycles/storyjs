@@ -55,12 +55,12 @@
  >!     $(this).attr('disabled', true);
  >!   });
  >! };
- >! function TryIt(story) {
+ >! window['TryIt'] = function(story) {
  >!   jQuery('<button/>')
  >!   .appendTo(this)
  >!   .text('Try It!')
  >!   .click_and_tell(story);
- >! }
+ >! };
  > TurnTheBackgroundBlueFor3Seconds = new Story({
  >   setup: function() { 
  >     var body = jQuery('body');
