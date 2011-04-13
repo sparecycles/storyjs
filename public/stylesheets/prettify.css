@@ -6,7 +6,7 @@
 .typ { color: #9F9; }
 .lit { color: #099; }
 .pun { color: #CC0; font-weight: bold; }
-.pln { color: #CCC; }
+.pln { color: #666; }
 .tag { color: #00C; }
 .atn { color: #909; }
 .atv { color: #0C0; }
@@ -15,7 +15,7 @@
 pre.prettyprint { 
   padding: 2px;
   border: 1px solid #888;
-  background: black;
+  background: #222;
 }
 
 pre.prettyprint, pre.prettyprint * {
