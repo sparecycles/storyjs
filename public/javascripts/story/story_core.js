@@ -46,6 +46,15 @@
  | memory.  They are the time-vs-space tradeoff made useful.
  |
  | Example:
+ |
+ >! jQuery.fn.click_and_tell = function(story) {
+ >!   return this.click(function() {
+ >!     new Story([story.plot, 
+ >!       function() { $(this).attr('disabled', false); }.bind(this)
+ >!     ]).tell({where: this}); 
+ >!     $(this).attr('disabled', true);
+ >!   });
+ >! };
  > TurnTheBackgroundBlueFor3Seconds = new Story({
  >   setup: function() { 
  >     var body = jQuery('body');
@@ -57,15 +66,10 @@
  >     body[0].setAttribute('style', this.style);
  >   }
  > }, Story.Delay(3000));
- >!jQuery('<button/>')
+ >! jQuery('<button/>')
  >! .appendTo(this)
- >! .click(function() { 
- >!   new Story([TurnTheBackgroundBlueFor3Seconds.plot, 
- >!     function() { $(this).attr('disabled', false); }.bind(this)
- >!   ]).tell(); 
- >!   $(this).attr('disabled', true);
- >! })
- >! .text('Try It!');
+ >! .text('Try It!')
+ >! .click_and_tell(TurnTheBackgroundBlueFor3Seconds);
  |
  | Here we defined a custom action as just an object with setup and teardown calls,
  | the argument list of a story is put into a Compound.  Arrays in a Compound are 
@@ -128,9 +132,7 @@
  > });
  >!jQuery('<button id="WithButtonTestButton"/>')
  >! .appendTo(this)
- >! .click(function() { 
- >!   ButtonExample.tell({where: jQuery(this)}); 
- >! })
+ >! .click_and_tell(ButtonExample) 
  >! .text('Try It!');
  |
  | Communication between nodes is ideally limited to up, down to direct children, 
