@@ -17,9 +17,9 @@ pre.prettyprint {
   border: 1px solid #888;
   background: black;
 }
+
 pre.prettyprint, pre.prettyprint * {
   font-family: monospace;
-  font-size: 18pt;
 }
 
 /* Specify class=linenums on a pre to get line numbering */

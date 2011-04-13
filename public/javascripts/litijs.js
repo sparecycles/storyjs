@@ -124,7 +124,11 @@ jQuery.fn.litijs = function(src) {
       }
     }
   }, {
-    '*/*,note/source': function() {
+    '*/*': function() {
+      StateMachine.select(StateMachine.event);
+      StateMachine.resend();
+    },
+    'note/source': function() {
       StateMachine.select(StateMachine.event);
       StateMachine.resend();
     },
@@ -179,7 +183,7 @@ jQuery.fn.litijs = function(src) {
       _.each.call(this, jQuery.fn.litijs.parse(result), function(part) {
         emit.send(part.type, part.text);
       });
-//    prettyPrint(); 
+      prettyPrint(); 
     }
   });
 };

@@ -168,9 +168,9 @@ Story = _.Class(function() {
       return tale;
     }
   },
-classic: { xxy: {},
-/** 
- ? static functions for Story
+classic: { 
+/* 
+ ? static functions for Story 
  */
     callback: function(fn) {
       var args = __args();
@@ -178,7 +178,10 @@ classic: { xxy: {},
       if(typeof fn === 'string') fn = device[fn];
       return Story.Tale.Context(device).bind(function() {
         try {
-          return fn.apply(Story.Tale.context.device, args.concat(__args()));
+          return fn.apply(
+            Story.Tale.context.device,
+            args.concat(__args())
+          );
         } finally {
           Story.Tale.context.tale.update();
         }
@@ -206,8 +209,9 @@ classic: { xxy: {},
           if(opts.name) {
             var own_scope = true;
             var name = opts.name;
-            if(name.slice(0,1) === '+') name = name.slice(1);
-            else if(name.slice(0,1) === '-') {
+            if(name.slice(0,1) === '+') {
+              name = name.slice(1);
+            } else if(name.slice(0,1) === '-') {
               own_scope = false;
               name = name.slice(1);
             } 
@@ -228,7 +232,9 @@ classic: { xxy: {},
             base = Story[parts[1]];
             name = parts[0];
           }
-          if(Story[name]) throw new Error("Story." + name + " already defined!");
+          if(Story[name]) {
+            throw new Error("Story." + name + " already defined!");
+          }
           Story[name] = _.Class(function() { 
             if(options) this.Options(options); 
             init.apply(this, arguments); 
@@ -238,17 +244,21 @@ classic: { xxy: {},
           });
         },
         Register: function(parent, device, options) {
-          _.push(parent.story.children, (options || {}).name || "list", device);
+          _.push(parent.story.children, 
+            (options || {}).name || "list", 
+            device);
           if(!(device instanceof Story.Plot)) try {
             device = new Story.Action(device);
           } catch(ex) {
             console.warn(
-              "story(plot): %o failed to convert to a Story.Plot", device
+              "story(plot): %o failed to convert to a Story.Plot",
+              device
             );
             debugger;
             device = new Story.Action(function() {
               console.warn(
-                "story(tale): %o failed to convert to a Story.Plot", device
+                "story(tale): %o failed to convert to a Story.Plot",
+                device
               );
               debugger;
             });
@@ -259,7 +269,9 @@ classic: { xxy: {},
         Build: function(list) {
           var type = "Sequence", 
               name;
-          while(list.length > 0 && typeof list[0] === 'string') switch(list[0].slice(0,1)) {
+          while(
+            list.length > 0 && typeof list[0] === 'string'
+          ) switch(list[0].slice(0,1)) {
           case '#':
             type = list[0].slice(1); 
             list = list.slice(1);
@@ -287,20 +299,28 @@ classic: { xxy: {},
       proto: {
         update: function() { 
           if(!this.device) return false;
-          var result = Story.Tale.Context(this.device, this).run('update');
+
+          var result = Story.Tale.Context(
+            this.device, this
+          ).run('update');
+
           if(!result) this.stop();
           return result;
         },
         handle: function(arg) {
           if(this.device) {
-            return Story.Tale.Context(this.device, this).run('handle', arg);
+            return Story.Tale.Context(
+              this.device, this
+            ).run('handle', arg);
           }
         },
         stop: function() { 
           if(!this.device) return false;
 
           try {
-            return Story.Tale.Context(this.device, this).run('teardown');
+            return Story.Tale.Context(
+              this.device, this
+            ).run('teardown');
           } finally {
             delete this.device;
           }
@@ -329,7 +349,10 @@ classic: { xxy: {},
               return _.local.call(Story.Tale, {
                 context: this
               }, function() {
-                return action.apply(Story.Tale.context.device, args.concat(__args()));
+                return action.apply(
+                  Story.Tale.context.device,
+                  args.concat(__args())
+                );
               });
             }
           }
