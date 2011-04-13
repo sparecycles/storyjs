@@ -168,7 +168,10 @@ Story = _.Class(function() {
       return tale;
     }
   },
-  classic: {
+classic: { xxy: {},
+/** 
+ ? static functions for Story
+ */
     callback: function(fn) {
       var args = __args();
       var device = Story.Tale.context.device;
