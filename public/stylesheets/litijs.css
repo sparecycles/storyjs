@@ -31,6 +31,10 @@ html{
   width:1000px;
   margin:0 auto;
 }
+h1{
+    font-weight: 700;
+    text-shadow: 1px 1px 1px #CCCCCC;
+}
 pre.prettyprint {
     background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 transparent;
     font-size: 14px;
