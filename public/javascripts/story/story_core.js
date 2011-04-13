@@ -60,7 +60,10 @@
  >!jQuery('<button/>')
  >! .appendTo(this)
  >! .click(function() { 
- >!   TurnTheBackgroundBlueFor3Seconds.tell(); 
+ >!   new Story([TurnTheBackgroundBlueFor3Seconds.plot, 
+ >!     function() { $(this).attr('disabled', false); }.bind(this)
+ >!   ]).tell(); 
+ >!   $(this).attr('disabled', true);
  >! })
  >! .text('Try It!');
  |
