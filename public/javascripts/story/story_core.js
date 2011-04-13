@@ -12,7 +12,7 @@
  | asynchronous tasks, user input, dialog flow, and other multi-stage
  | problems which can't be addressed in one run of code.
  |
- | A particlar Story is made of a tree of plot nodes.  Internal nodes are container nodes
+ | A particular Story is made of a tree of plot nodes.  Internal nodes are container nodes
  | which control execution, leaves are action nodes which perform tasks.
  | Construction of the tree is the job of Story.Plot
  |
