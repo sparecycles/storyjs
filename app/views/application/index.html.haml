@@ -151,5 +151,12 @@
       mvc: 'javascripts/story/mvc.js',
     })[window.location.search.slice(1)] || 'javascripts/story/story_core.js';
     
-    $(function() { $('body').litijs(file); });
+    $('body').litijs(file, function() {
+      if(window.location.hash) {
+        var element = document.getElementById('litijs.' + window.location.hash.slice(1));
+        if(element) {
+          window.scrollTo(0, $(element).offset().top);
+        } else debugger;
+      }
+    });
 -# vim: set sw=2 ts=2 expandtab :

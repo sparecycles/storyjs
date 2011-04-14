@@ -19,7 +19,7 @@
  | Construction of the tree is the job of >{Story.Plot}.
  |
  | A Story must be >{Story.tell|told} to function. 
- | A >{Story.Tale} represents this. Any number of tales can 
+ | A >{Story.Tale} represents an active story. Any number of tales can 
  | be created from a single story.  Representation and control of a 
  | live story is in the domain of Story.Tale.
  |
@@ -34,10 +34,10 @@
  |   handle(arg) => process events sent to the tale (this hasn't been used yet!)
  |
  | Let's illustrate with the two basic collection plot nodes: 
- |   Story.Sequence and Story.Compound.
+ |   <{?story#Story.Sequence|Story.Sequence} and Story.Compound.
  |
  | A Sequence node acts as each of its children in turn, setting up and
- | tearing down each one, and updating each one until it is "done".
+ | tearing down each one.
  | A sequeunce which has run off then end of its children is "done".
  |
  | A Compound acts as all of its children, all their setups and

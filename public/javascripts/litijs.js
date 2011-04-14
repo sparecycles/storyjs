@@ -162,7 +162,7 @@ StateMachine = _.Class(function(init, states, transitions, self) {
   }
 });
 
-jQuery.fn.litijs = function(src) {
+jQuery.fn.litijs = function(src, callback) {
   var emit = new StateMachine('file', {
     code: {
       enter: function() {
@@ -235,7 +235,7 @@ jQuery.fn.litijs = function(src) {
     '*/source' : '!note(""); !',
     'source/*,source/note': ']; !',
     '*/anchor,source/anchor' : function(anchor) {
-      this.node.append($('<a/>').attr('name', anchor));
+      this.node.append($('<a/>').attr('name', anchor).attr('id', 'litijs.' + anchor));
     },
     'note/note': function(note) {
       this.process(note);
@@ -274,6 +274,8 @@ jQuery.fn.litijs = function(src) {
       this.example_code += line;
     },
     'title/title': function(title) {
+      var anchor = title.trim().replace(/\s+/g, '_');
+      this.node.append($('<a/>').attr('name', anchor).attr('id', 'litijs.' + anchor));
       this.node.appendText(title);
     }
   }, { 
@@ -301,10 +303,11 @@ jQuery.fn.litijs = function(src) {
       } else {
         this.node.appendText(line.slice(0,links[0].index));
         _.each.call(this, links, function(link, index) {
-          $('<a/>').text(link.text).attr(
+          var a = $('<a/>').text(link.text).attr(
             link.type == '@' ? 'name' : 'href', 
             link.type == '>' ? '#' + link.anchor : link.anchor
           ).appendTo(this.node);
+          if(link.type == "@") a.attr('id', 'litijs.' + link.anchor);
           if(index < links.length-1) {
             this.node.appendText(line.slice(link.index + link.match.length, link[index+1].index));
           } else {
@@ -320,7 +323,6 @@ jQuery.fn.litijs = function(src) {
         .appendTo(this)
       ) 
   });
-  if(!src) src = '/javascripts/story/story_core.js';
   jQuery.ajax({
     url: src, 
     cache: false,
@@ -333,6 +335,7 @@ jQuery.fn.litijs = function(src) {
         emit.send("text", "");
         //alert(JSON.stringify(emit.self.metadata));
         prettyPrint(); 
+        callback && callback();
       }
     }, 
     dataType: 'html'
@@ -367,7 +370,7 @@ jQuery.fn.litijs.parse = function(source) {
         }
       });
     }
-    return '{{{' + match + '}}}';
+    return '';
   });
   return result;
 }

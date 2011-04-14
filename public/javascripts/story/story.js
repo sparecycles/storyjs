@@ -39,8 +39,8 @@ Story.Plot.Define('Action', function(device) {
 }, {});
 
 /*
--- Sequence
- | A @{Story.Sequence|Sequence} plot node executes its
+-- Story.Sequence
+ | A Sequence plot node executes its
  | children one by one, until they are done.  
  | A sequence is done when it is no longer executing any child.
  | A child array will become a >{Story.Compound|Compound},
@@ -69,20 +69,25 @@ Story.Plot.Define('Sequence', function() {
   },
   select: function(index) {
     this.selected = true;
+    /// teardown the current node if we have one.
     if(this.current_step) { 
       Story.Tale.teardown(this.current_step);
       delete this.current_step;
     }
     this.index = index;
     var next_step = this.steps[this.index];
+    /// setup the next node if we have one.
     if(next_step) {
       this.current_step = Story.Tale.setup(next_step);
     }
   },
+  /// @{Story.Sequence.update} updates each child until it 
+  /// reaches one which is not "done".
   update: function() {
     while(this.current_step && !Story.Tale.update(this.current_step)) {
       this.select(this.index + 1);
     }
+    /// if we haven't iterated off the end of the list yet, we're not done.
     return this.index < this.steps.length;
   },
   handle: function(arg) {
@@ -96,10 +101,11 @@ Story.Plot.Define('Sequence', function() {
 });
 
 /*
--- Sequence
- | A @{Story.Sequence|Sequence} plot node executes its
- | children one by one, until they are done.  
- | A sequence is done when it is no longer executing any child.
+-- Story.Loop
+ | A Loop plot node executes its
+ | children one by one, and then restarts.
+ | It only loops through its children once per update, starting wherever it left off.
+ | It is never done, a parent must be made to tear it down prematurely to exit.
  */ 
 Story.Plot.Define('Loop:Sequence', function() {
 }, {
@@ -119,18 +125,23 @@ Story.Plot.Define('Loop:Sequence', function() {
   }
 });
 
-
+/*
+-- Story.Ignore
+ * An ignore plot node is a sequence which always reports as done.
+ */
 Story.Plot.Define('Ignore:Sequence', function() {
+  /// no special setup to do.
 }, {
   update: function() {
     Story.Sequence.prototype.update.call(this);
+    /// return false instead of whatever >{Story.Sequence.update} would have.
     return false;
   }
 });
 
 /*
 -- Story.Compound
- |
+ | A Compound acts as all its children.
  */
 Story.Plot.Define('Compound', function() { 
   this.plots = [];
