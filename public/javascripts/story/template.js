@@ -1,3 +1,14 @@
+/*
+ | Module: Template
+ | Author: Adam Freidin
+ | Requires: Layer
+-- Introduction
+ |
+ | Template is a live DOM/Data rendering system.  
+ | Loosely based on <{http://beebole.com/pure/|PURE}, but with the
+ | dynamic rendering capabilities of <{http://knockoutjs.com|knockout}
+ |
+ */
 Template = _.Class(function(self, action) {
   var args = __args();
 

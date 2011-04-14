@@ -65,7 +65,7 @@
  >!   target.insertAfter(button);
  >!   button.click_and_tell(story, target);
  >! };
- > TurnTheBackgroundBlueFor3Seconds = new Story({
+ > MakeItRed = new Story({
  >   setup: function() { 
  >     this.style = Story.read('target')[0].getAttribute('style') || '';
  >     Story.read('target').css('background-color', 'red');
@@ -74,7 +74,7 @@
  >     Story.read('target')[0].setAttribute('style', this.style);
  >   }
  > }, Story.Delay(1000));
- >! TryIt.call(this, TurnTheBackgroundBlueFor3Seconds);
+ >! TryIt.call(this, MakeItRed);
  |
  | Here we defined a custom action as just an object with setup and teardown calls,
  | the argument list of a story is put into a Compound.  Arrays in a Compound are 
@@ -489,6 +489,7 @@ Story = _.Class(function() {
  | LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  | OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  | THE SOFTWARE.
- |
+-- Git it
+ | <{http://github.com/adam-f/storyjs}
  */
 /* vim: set sw=2 ts=2 expandtab : */

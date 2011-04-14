@@ -141,5 +141,15 @@
     false && $('<div/>').appendTo('body').template(canvas_mvc, {
       '.' : { $template: '=image-loader' }
     });
-    $(function() { $('body').litijs('javascripts/story/story_core.js'); });
+    var file = 'javascripts/story/story_core.js';
+    var query = ({
+      litijs: 'javascripts/litijs.js',
+      template: 'javascripts/story/template.js',
+      story: 'javascripts/story/story.js',
+      core: 'javascripts/story/story_core.js',
+      layer: 'javascripts/story/layer.js',
+      mvc: 'javascripts/story/mvc.js',
+    })[window.location.search.slice(1)] || file;
+    
+    $(function() { $('body').litijs(query); });
 -# vim: set sw=2 ts=2 expandtab :

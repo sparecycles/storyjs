@@ -263,8 +263,8 @@ jQuery.fn.litijs = function(src) {
     },
     'text/text': function(line) {
       var links = [];
-      line.replace(/>{([^}|]*)(?:\|([^}]*))?}/g, function(match, anchor, text, index) {
-        links.push({index:index, match: match, anchor: anchor, text: text || anchor });
+      line.replace(/([<>]){([^}|]*)(?:\|([^}]*))?}/g, function(match, type, anchor, text, index) {
+        links.push({index:index, match: match, anchor: anchor, text: text || anchor, type: type });
         return match;
       });
       if(links.length == 0) {
@@ -272,7 +272,7 @@ jQuery.fn.litijs = function(src) {
       } else {
         this.node.appendText(line.slice(0,links[0].index));
         _.each.call(this, links, function(link, index) {
-          $('<a/>').text(link.text).attr('href', '#' + link.anchor).appendTo(this.node);
+          $('<a/>').text(link.text).attr('href', link.type == '>' ? '#' + link.anchor : link.anchor).appendTo(this.node);
           if(index < links.length-1) {
             this.node.appendText(line.slice(link.index + link.match.length, link[index+1].index));
           } else {
