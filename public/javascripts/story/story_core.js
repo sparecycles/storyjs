@@ -1,4 +1,4 @@
-/**
+/*
  | Module: Story.Core
  | Requires: Layer
  | Author: Adam Freidin
@@ -43,8 +43,7 @@
  | A Compound acts as all of its children, all their setups and
  | teardowns are done with the compound, and when all of them are
  | "done" then the compound is too.  A common pairing for compounds
- | is one node for delaying (fixed timeout, until click, until ajax
- | response), and another for displaying.
+ | is one node to display, and another to @{Story.Delay}.
  |
  | Sequence and Compound are foundational patterns, complementing each other
  | like horizontal and vertical boxes in typesetting, unions and structs in 
@@ -68,7 +67,9 @@
  >!   target.insertAfter(button);
  >!   button.click_and_tell(story, target);
  >! };
- > MakeItRed = new Story({
+ >!
+ >!TryIt.call(this,
+ > new Story({
  >   setup: function() { 
  >     this.style = Story.read('target')[0].getAttribute('style') || '';
  >     Story.read('target').css('background-color', 'red');
@@ -76,8 +77,8 @@
  >   teardown: function() {
  >     Story.read('target')[0].setAttribute('style', this.style);
  >   }
- > }, Story.Delay(1000));
- >! TryIt.call(this, MakeItRed);
+ > }, Story.Delay(1000))
+ >!);
  |
  | Here we defined a custom action as just an object with setup and teardown calls,
  | the argument list of a story is put into a Compound.  Arrays in a Compound are 
@@ -117,13 +118,14 @@
  |
  | And then we can define the same story as
  |
- > WithStyleExample = new Story(
+ >!TryIt.call(this,
+ > new Story(
  >   Story.WithStyle(function() { 
  >     return Story.read('target'); 
  >   }, { 'background-color': '#8B00FF' }),
  >   Story.Delay(3000)
- > );
- >! TryIt.call(this, WithStyleExample);
+ > )
+ >!);
  |
  | Pretty slick, eh?
  |
@@ -131,7 +133,8 @@
  | A Tale has a scope, which is just a javascript object which can be used to pass 
  | information between plot nodes.
  | 
- > ButtonExample = new Story({
+ >!TryIt.call(this,
+ > new Story({
  >   setup: function() {
  >     this.button = jQuery('<button/>').click(Story.callback(function() {
  >       this.scope.done = true;
@@ -142,8 +145,8 @@
  >   'background-color': '#8B00FF' 
  > }), function() {
  >   return !this.scope.done;
- > });
- >! TryIt.call(this, ButtonExample);
+ > })
+ >!);
  |
  | Communication between nodes is ideally limited to up, down to direct children, 
  | across through scope variables, and to the entire tree by handle.  This should allow reuse of
@@ -195,15 +198,11 @@ Story = _.Class(function() {
         }
       });
     },
-///
 /// Story.update runs the update function again on the active tale.
-///
     update: function() {
       return Story.Tale.context.tale.update();
     },
-///
 /// handle propagates handle(arg) calls through all the active plot nodes.
-///
     handle: function(arg) {
       return Story.Tale.context.tale.handle(arg);
     },
@@ -253,12 +252,9 @@ Story = _.Class(function() {
 /*
 -- Story.Plot
  | @{Story.Plot|} 
- | 
+ | Plot is responsible for definition of nodes and story construction.
+ | It is also the root class of all story nodes.
  */
-///
-/// Plot is responsible for definition of nodes and story construction.
-/// It is also the root class of all story nodes.
-///
     Plot: _.Class(function(arg) {
       this.story = {
         options: {},
@@ -446,10 +442,13 @@ Story = _.Class(function() {
         handle: function(device, arg) {
           return Story.Tale.Context(device).run('handle', arg);
         },
-        /// @{Story.Tale.Context} maintains the active 
-        /// tale and the active plot device.
-        /// An instance of it is set in Story.Tale.context 
-        /// when a tale is being told.
+/*
+-- Story.Tale.Context
+ | @{Story.Tale.Context} maintains the active 
+ | tale and the active plot device.
+ | An instance of it is set in Story.Tale.context 
+ | when a tale is being told.
+ */
         Context: _.Class(function(device, tale) {
           this.device = device || Story.Tale.context.device;
           this.tale = tale || Story.Tale.context.tale;
@@ -477,9 +476,9 @@ Story = _.Class(function() {
               });
             }
           }
-        })
+        }) // -- Story.Tale.Context
       }
-    })
+    }) // -- Story.Tale
   }
 });
 

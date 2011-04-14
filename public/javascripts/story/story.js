@@ -128,6 +128,10 @@ Story.Plot.Define('Ignore:Sequence', function() {
   }
 });
 
+/*
+-- Story.Compound
+ |
+ */
 Story.Plot.Define('Compound', function() { 
   this.plots = [];
   _.each.call(this, __args(), function(plot) {
@@ -161,9 +165,34 @@ Story.Plot.Define('Compound', function() {
   }
 });
 
-Story.Plot.Define('Switch', function(states) {
+/*
+-- Story.Switch
+ | @{Story.Switch|} A plot node which acts as one of its children.
+ |
+ | The first parameter is an optional choice function which
+ | determines which case of the switch to use. 
+ |
+ | If the first parameter is a string, that variable will be 
+ | read from story and baked in.
+ |
+ | The choice function is disabled by calling >{Story.Switch.select|select}.
+ |
+ */
+Story.Plot.Define('Switch', function(choose, states) {
   this.tasks = {};
   this.options = {};
+  if(arguments.length == 1) {
+    states = choose;
+    choose = 'result';
+  }
+  if(typeof choose !== 'function') {
+    choose = new function(choice) { return function() { 
+      var the_choice = Story.read(choice); 
+      this.choose = _.constant(the_choice); 
+      return this.choose();
+    }; }(choose);
+  }
+  this.choose = choose;
   _.each.call(this, states, function(t, k) {
     if(k.slice(0,1) != '$') {
       if(t instanceof Array) {
@@ -174,53 +203,46 @@ Story.Plot.Define('Switch', function(states) {
   });
 }, {
   setup: function() {
-    var $default = this.options.$default;
-    this.state = this.scope.result || $default;
-    var task = this.tasks[this.state];
-    if(!task) {
-      task = this.tasks['*'];
-    }
-    this.current_task = task && Story.Tale.setup(task);
+    this._select(this.choose());
   },
   teardown: function() {
     if(this.current_task) Story.Tale.teardown(this.current_task);
     delete this.current_task;
   },
   update: function() {
+    var new_state = this.choose();
+    if(this.state != new_state) {
+      this._select(new_state);
+    }
     return this.current_task ? Story.Tale.update(this.current_task) : 0;
   },
   handle: function(arg) {
     return this.current_task ? Story.Tale.handle(this.current_task, arg) : 0;
   },
-  select: function(state) {
+  /// Internal: changes state.
+  _select: function(state) {
     var next_task = this.tasks[state];
-    if(!next_task) next_task = this.tasks[state];
+    if(!next_task) next_task = this.tasks['*'];
     if(next_task) {
-      if(this.current_task) Story.Tale.teardown(this.current_task);
+      if(this.current_task) {
+        Story.Tale.teardown(this.current_task);
+      }
       this.state = state;
       this.current_task = Story.Tale.setup(next_task);
     }
+  },
+  /// @{Story.Switch.select|select} destroys the choice function and
+  /// switches to another state.
+  select: function(state) {
+    this.choose = _.constant(state);
+    this._select(state);
   }
 });
 
-Story.Plot.Define('Live', function(interval) {
-  arguments;
-  this.interval = interval;
-  this.device = Story.Plot.Register(this, Story.Plot.Build(__args()));
-}, {
-  setup: function() {
-    this.handle = setInterval(Story.callback(Story.update), this.interval);
-    this.content = Story.Tale.setup(this.device);
-  },
-  update: function() {
-    return Story.Tale.update(this.content);
-  },
-  teardown: function() {
-    Story.Tale.teardown(this.content);
-    clearInterval(this.handle);
-  }
-});
-
+/*
+-- Story.Delay
+ | @{Story.Delay|} A plot node which remains active until a timeout completes.
+ */
 Story.Plot.Define('Delay', function(ms) {
   this.delay = ms;
 }, {
@@ -236,6 +258,29 @@ Story.Plot.Define('Delay', function(ms) {
   },
   update: function() {
     return !this.done;
+  }
+});
+
+/*
+-- Story.Live
+ | This node actives an <{http://w3.org/|interval} which
+ | updates the story periodically.  This should rarely be needed.
+ */
+Story.Plot.Define('Live', function(interval) {
+  arguments;
+  this.interval = interval;
+  this.device = Story.Plot.Register(this, Story.Plot.Build(__args()));
+}, {
+  setup: function() {
+    this.handle = setInterval(Story.callback(Story.update), this.interval);
+    this.content = Story.Tale.setup(this.device);
+  },
+  update: function() {
+    return Story.Tale.update(this.content);
+  },
+  teardown: function() {
+    Story.Tale.teardown(this.content);
+    clearInterval(this.handle);
   }
 });
 
