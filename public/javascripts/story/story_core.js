@@ -13,13 +13,15 @@
  | problems which can't be addressed in one run of code.
  |
  | A particular Story is made of a tree of plot nodes.
- | Internal nodes are container nodes which control execution, 
- | leaves are action nodes which perform tasks.
- | Construction of the tree is the job of Story.Plot
+ | Generally, internal nodes are container nodes which control execution, 
+ | while the leaves of the tree are action nodes which perform tasks.
  |
- | A Story must be >{Story.tell|told} to function. A Story.Tale represents this.
- | Any number of tales can be created from a single story.
- | Representation and control of a live story is in the domain of Story.Tale
+ | Construction of the tree is the job of >{Story.Plot}.
+ |
+ | A Story must be >{Story.tell|told} to function. 
+ | A >{Story.Tale} represents this. Any number of tales can 
+ | be created from a single story.  Representation and control of a 
+ | live story is in the domain of Story.Tale
  |
 -- API/Interface
  | Each story plot node must handle a few basic functions:
@@ -79,12 +81,12 @@
  | automatically converted to Sequences, and vice-versa.  
  |
  | Any non-array object or function that doesn't satisfy 
- | >>>thing instanceof Story.Plot<<< will | be converted to
+ | >>>thing instanceof Story.Plot<<< will be converted to
  | a Story.Action, a function will become the update, an object can
  | specify a setup, teardown, update and/or handle as needed.
  |
  | You might like this pattern with saving and restoring css useful, but find specifying 
- | the setup and teardown calls tedious.  By all means, please, define new Plot node types.
+ | the setup and teardown calls tedious for each one, then by all means, please, >{Story.Plot.Define|define} new Plot node types.
  |
  | But make them as general as possible, you won't regret it.
  |
@@ -191,14 +193,14 @@ Story = _.Class(function() {
       return Story.Tale.context.tale.update();
     },
 ///
-///handle propagates handle(arg) calls through all the active plot nodes.
+/// handle propagates handle(arg) calls through all the active plot nodes.
 ///
     handle: function(arg) {
       return Story.Tale.context.tale.handle(arg);
     },
 ///
-///Plot is responsible for definition of nodes and story construction.
-///It is also the root class of all story nodes.
+/// @{Story.Plot} is responsible for definition of nodes and story construction.
+/// It is also the root class of all story nodes.
 ///
     Plot: _.Class(function(arg) {
       this.story = {
@@ -235,7 +237,7 @@ Story = _.Class(function() {
         type: 'node'
       },
       classic: {
-        /// Story.Plot.Define(name, constructor, {...proto...}}
+        /// @{Story.Plot.Define}(name, constructor, {...proto...}}
         /// Defines a new plot node type, which you can use as Story[name].
         Define: function(name, init, prototype, options) {
           var base = Story.Plot;
@@ -255,7 +257,7 @@ Story = _.Class(function() {
             proto: _.overlay({}, prototype, { type: name })
           });
         },
-        /// Story.Plot.Register()
+        /// @{Story.Plot.Register}()
         /// Registers a node, and ensures that it IS a node.
         /// Registration doesn't do anything critical yet,
         /// but it provides the place we'll use to build
@@ -288,7 +290,7 @@ Story = _.Class(function() {
           device.story.parent = parent;
           return device;
         },
-        /// Build takes an array and makes it into Sequence
+        /// @{Story.Plot.Build} takes an array and makes it into Sequence
         /// leading elements of the array which are strings beginning with
         /// '#' and '@' allow the type of container and the name of the
         /// array, respectively, to be easily specified.
@@ -317,7 +319,7 @@ Story = _.Class(function() {
         }
       }
     }),
-    /// The Story Tale class is responsible for running stories.
+    /// The @{Story.Tale} class is responsible for running stories.
     Tale: _.Class(function(plot, scope) {
       this.device = Object.create(plot);
       this.scope = this.device.scope = scope || {};
@@ -355,12 +357,12 @@ Story = _.Class(function() {
         }
       },
       classic: {
-        /// Use Story.Tale.update(device)
+        /// Use @{Story.Tale.update}(device)
         /// to update nodes from your own Story.Plot.Define nodes.
         update: function(device) {
           return Story.Tale.Context(device).run('update');
         },
-        /// Use Story.Tale.setup(node)
+        /// Use @{Story.Tale.setup}(node)
         /// to get a device for that node.
         setup: function(node) {
           if(!node) { debugger; return null; }
@@ -374,17 +376,17 @@ Story = _.Class(function() {
           Story.Tale.Context(device).run('setup');
           return device;
         },
-        /// Use Story.Tale.teardown(device)
+        /// Use @{Story.Tale.teardown}(device)
         /// to destroy devices that you setup.
         teardown: function(device) {
           Story.Tale.Context(device).run('teardown');
         },
-        /// Use Story.Tale.handle(device, arg)
+        /// Use @{Story.Tale.handle}(device, arg)
         /// to pass on handle(...) to your active device(s).
         handle: function(device, arg) {
           return Story.Tale.Context(device).run('handle', arg);
         },
-        /// Story.Tale.Context maintains the active 
+        /// @{Story.Tale.Context} maintains the active 
         /// tale and the active plot device.
         /// An instance of it is set in Story.Tale.context 
         /// when a tale is being told.
