@@ -71,7 +71,7 @@
  >     var body = jQuery('body');
  >     body[0].setAttribute('style', this.style);
  >   }
- > }, Story.Delay(3000));
+ > }, Story.Delay(1000));
  >! TryIt.call(this, TurnTheBackgroundBlueFor3Seconds);
  |
  | Here we defined a custom action as just an object with setup and teardown calls,

@@ -101,4 +101,5 @@ button:active {
 
 button:disabled {
 	background: lightgray;
+        border:#ddd;
 }
