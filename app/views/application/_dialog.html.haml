@@ -139,9 +139,9 @@
             if(result !== false) dialog.close();
           } else {
             if(this.button_node) {
-              Story.Tale.teardown(this.button_node);
+              Story.Plot.Device.teardown(this.button_node);
             }
-            this.button_node = Story.Tale.setup(arg);
+            this.button_node = Story.Plot.Device.setup(arg);
           }
           Story.update();
         }));
@@ -153,13 +153,13 @@
       },
       update: function() {
         if(this.button_node) {
-          Story.Tale.update(this.button_node);
+          Story.Plot.Device.update(this.button_node);
         }
         return this.dialog.is_open();
       },
       teardown: function() {
         if(this.button_node) {
-          Story.Tale.teardown(this.button_node);
+          Story.Plot.Device.teardown(this.button_node);
         }
         if(this.dialog.is_open()) {
           this.dialog.close();

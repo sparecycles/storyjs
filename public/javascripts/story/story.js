@@ -64,27 +64,27 @@ Story.Plot.Define('Sequence', function() {
   /// @{Story.Sequence.teardown|teardown} tearsdown the
   /// active device.
   teardown: function() {
-    if(this.current_step) Story.Tale.teardown(this.current_step); 
+    if(this.current_step) Story.Plot.Device.teardown(this.current_step); 
     delete this.current_step;
   },
   select: function(index) {
     this.selected = true;
     /// teardown the current node if we have one.
     if(this.current_step) { 
-      Story.Tale.teardown(this.current_step);
+      Story.Plot.Device.teardown(this.current_step);
       delete this.current_step;
     }
     this.index = index;
     var next_step = this.steps[this.index];
     /// setup the next node if we have one.
     if(next_step) {
-      this.current_step = Story.Tale.setup(next_step);
+      this.current_step = Story.Plot.Device.setup(next_step);
     }
   },
   /// @{Story.Sequence.update} updates each child until it 
   /// reaches one which is not "done".
   update: function() {
-    while(this.current_step && !Story.Tale.update(this.current_step)) {
+    while(this.current_step && !Story.Plot.Device.update(this.current_step)) {
       this.select(this.index + 1);
     }
     /// if we haven't iterated off the end of the list yet, we're not done.
@@ -92,7 +92,7 @@ Story.Plot.Define('Sequence', function() {
   },
   handle: function(arg) {
     if(this.current_step) {
-      Story.Tale.handle(this.current_step, arg);
+      Story.Plot.Device.handle(this.current_step, arg);
     }
   },
   restart: function() {
@@ -113,7 +113,7 @@ Story.Plot.Define('Loop:Sequence', function() {
     var steps = this.steps;
     var start = this.index;
     do {
-      if(Story.Tale.update(this.current_step)) break;
+      if(Story.Plot.Device.update(this.current_step)) break;
       if(this.index == steps.length - 1) {
         this.select(0);
       } else {
@@ -154,24 +154,24 @@ Story.Plot.Define('Compound', function() {
 }, {
   setup: function() {
     this.devices = _.map.call(this, this.plots, function(plot) {
-      return Story.Tale.setup(plot);
+      return Story.Plot.Device.setup(plot);
     });
   },
   teardown: function() {
     _.each(this.devices.slice().reverse(), function(device) {
-      Story.Tale.teardown(device);
+      Story.Plot.Device.teardown(device);
     });
   },
   update: function() {
     var result = false;
     _.each(this.devices, function(device) {
-      result = Story.Tale.update(device) || result;
+      result = Story.Plot.Device.update(device) || result;
     });
     return result;
   },
   handle: function(arg) {
     _.each(this.devices, function(device) {
-      Story.Tale.handle(device, arg);
+      Story.Plot.Device.handle(device, arg);
     });
   }
 });
@@ -217,7 +217,7 @@ Story.Plot.Define('Switch', function(choose, states) {
     this._select(this.choose());
   },
   teardown: function() {
-    if(this.current_task) Story.Tale.teardown(this.current_task);
+    if(this.current_task) Story.Plot.Device.teardown(this.current_task);
     delete this.current_task;
   },
   update: function() {
@@ -225,10 +225,10 @@ Story.Plot.Define('Switch', function(choose, states) {
     if(this.state != new_state) {
       this._select(new_state);
     }
-    return this.current_task ? Story.Tale.update(this.current_task) : 0;
+    return this.current_task ? Story.Plot.Device.update(this.current_task) : 0;
   },
   handle: function(arg) {
-    return this.current_task ? Story.Tale.handle(this.current_task, arg) : 0;
+    return this.current_task ? Story.Plot.Device.handle(this.current_task, arg) : 0;
   },
   /// Internal: changes state.
   _select: function(state) {
@@ -236,10 +236,10 @@ Story.Plot.Define('Switch', function(choose, states) {
     if(!next_task) next_task = this.tasks['*'];
     if(next_task) {
       if(this.current_task) {
-        Story.Tale.teardown(this.current_task);
+        Story.Plot.Device.teardown(this.current_task);
       }
       this.state = state;
-      this.current_task = Story.Tale.setup(next_task);
+      this.current_task = Story.Plot.Device.setup(next_task);
     }
   },
   /// @{Story.Switch.select|select} destroys the choice function and
@@ -284,13 +284,13 @@ Story.Plot.Define('Live', function(interval) {
 }, {
   setup: function() {
     this.handle = setInterval(Story.callback(Story.update), this.interval);
-    this.content = Story.Tale.setup(this.device);
+    this.content = Story.Plot.Device.setup(this.device);
   },
   update: function() {
-    return Story.Tale.update(this.content);
+    return Story.Plot.Device.update(this.content);
   },
   teardown: function() {
-    Story.Tale.teardown(this.content);
+    Story.Plot.Device.teardown(this.content);
     clearInterval(this.handle);
   }
 });

@@ -294,8 +294,8 @@ jQuery.fn.litijs = function(src, callback) {
         return '';
       }.bind(this));
       if(!line) return;
-      line.replace(/([@<>]){([^}|]*)(?:\|([^}]*))?}/g, function(match, type, anchor, text, index) {
-        links.push({index:index, match: match, anchor: anchor, text: text || anchor, type: type });
+      line.replace(/([@<>]){([^}|]*)(\|[^}]*)?}/g, function(match, type, anchor, text, index) {
+        links.push({index:index, match: match, anchor: anchor, text: text ? text.slice(1) : anchor, type: type });
         return match;
       });
       if(links.length == 0) {
@@ -309,7 +309,7 @@ jQuery.fn.litijs = function(src, callback) {
           ).appendTo(this.node);
           if(link.type == "@") a.attr('id', 'litijs.' + link.anchor);
           if(index < links.length-1) {
-            this.node.appendText(line.slice(link.index + link.match.length, link[index+1].index));
+            this.node.appendText(line.slice(link.index + link.match.length, links[index+1].index));
           } else {
             this.node.appendText(line.slice(link.index + link.match.length));
           }
@@ -344,11 +344,11 @@ jQuery.fn.litijs = function(src, callback) {
 jQuery.fn.litijs.parse = function(source) {
   var fn = jQuery.fn.litijs;
   var result = [];
-  source.replace(/(?:\s*\/\/\/(.*))|(\/\*(?:[^*]|\*[^\/])*\*\/)|(?:([^\/]|\/(?:[^*\/]|\/[^\/]))*([^\/\s]|\/(?:[^*\/\s]|\/[^\/\s]))+)/g, function(match, linecomment, comment, source) {
+  source.replace(/(?:[ \t]*\/\/\/(.*))|(\/\*(?:[^*]|\*[^\/])*\*\/)|((?:[^\/]|\/(?:[^*\/]|\/[^\/]))*(?:[^\/ \t]|\/(?:[^*\/ \t]|\/[^\/ \t]))+)/g, function(match, linecomment, comment, source) {
     if(!match || !/[^\s]/.test(match)) {
       return "";
     } else if(source) {
-      return result.push({type:'source', text: match});
+      return result.push({type:'source', text: source});
     } else if(linecomment) {
       result.push({type:'note', text:linecomment});
     } else if(comment) {
