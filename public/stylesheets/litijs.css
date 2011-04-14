@@ -9,10 +9,16 @@ body {
 }
 .litijs p{
   font-weight:300;
+  width:600px;
+  line-height:1.4em;
+}
+.litijs .prettyprint{
+  width:600px;
+  padding-bottom:10px;
 }
 .litijs-container .wrapper pre {
   float:right;
-  width:740px;
+  width:600px;
   margin:0;
   padding:0;
   -moz-box-shadow: 4px 0 3px -1px #666;
@@ -51,6 +57,7 @@ h1{
     box-shadow: 3px 3px 3px #666;
     line-height: 20px;
     padding-left: 30px;
+    padding-bottom:10px;
     padding-top: 0;
 }
 
