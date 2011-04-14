@@ -304,8 +304,9 @@ jQuery.fn.litijs = function(src) {
   });
   if(!src) src = '/javascripts/story/story_core.js';
   jQuery.ajax({
-    url:src, 
-    success:function(result, status) {
+    url: src, 
+    cache: false,
+    success: function(result, status) {
       if(status == 'success') {
         var parsed = jQuery.fn.litijs.parse(result);
         _.each.call(this, parsed, function(part) {
