@@ -6,20 +6,46 @@
  | Coming Soon!
  */
 
+/*
+-- Action
+ | An @{Story.Action|Action} plot node is used to construct an 
+ | plot node from a generic object or function.  Usually this will
+ | be automatic.
+ */ 
 Story.Plot.Define('Action', function(device) {
   if(typeof device === 'function') {
     this.update = device;
   } else {
     var device_functions = ['setup', 'teardown', 'update', 'handle'];
 
+    /// Copy the core functions to this action.
     _.each.call(this, device_functions, function(fn) {
       if(device[fn]) this[fn] = device[fn];
     });
 
+    /// If there's some data, get it in there before we setup.
+    if(device.data) {
+      this.setup = new function(setup, data) {
+        return function() {
+          this.data = Object.create(device.data);
+          return setup.apply(this, arguments);
+        };
+      }(this.setup, device.data);
+    }
+
+    /// If a name is specified, use it.
     if(device.name) this.Options({name:device.name});
   }
 }, {});
 
+/*
+-- Sequence
+ | A @{Story.Sequence|Sequence} plot node executes its
+ | children one by one, until they are done.  
+ | A sequence is done when it is no longer executing any child.
+ | A child array will become a >{Story.Compound|Compound},
+ | 
+ */ 
 Story.Plot.Define('Sequence', function() {
   this.steps = [];
   this.index = -1;
@@ -31,9 +57,12 @@ Story.Plot.Define('Sequence', function() {
     this.steps.push(Story.Plot.Register(this, device));
   });
 }, {
+  /// @{Story.Sequence.setup|setup} selects the first child.
   setup: function() {
-    this.current_step = Story.Tale.setup(this.steps[this.index = 0]);
+    this.select(0);
   },
+  /// @{Story.Sequence.teardown|teardown} tearsdown the
+  /// active device.
   teardown: function() {
     if(this.current_step) Story.Tale.teardown(this.current_step); 
     delete this.current_step;
@@ -66,6 +95,12 @@ Story.Plot.Define('Sequence', function() {
   }
 });
 
+/*
+-- Sequence
+ | A @{Story.Sequence|Sequence} plot node executes its
+ | children one by one, until they are done.  
+ | A sequence is done when it is no longer executing any child.
+ */ 
 Story.Plot.Define('Loop:Sequence', function() {
 }, {
   update: function() {

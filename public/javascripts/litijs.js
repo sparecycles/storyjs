@@ -175,15 +175,15 @@ jQuery.fn.litijs = function(src) {
     source: {
       enter: function() {
         this.node = $('<pre class="prettyprint"/>').appendTo(this.node);
+        this.remove_one_source_line = true;
       },
       leave: function() {
         this.node = this.node.parent().parent();
       }
     },
     note: {
-      enter: function(text, auto) {
+      enter: function(text) {
         this.node = $('<div class="note"/>').appendTo(this.node).wrap('<div class="wrapper"/>');
-        this.remove_one_source_line = !auto;
       },
       leave: function() {
         this.node = this.node.parent();
@@ -232,13 +232,13 @@ jQuery.fn.litijs = function(src) {
     '*/note': '=code; !',
     'code/note': '[note; !',
     'note/source': ']; [source; !',
-    '*/source' : '!note("", true); !',
+    '*/source' : '!note(""); !',
     'source/*,source/note': ']; !',
     '*/anchor,source/anchor' : function(anchor) {
       this.node.append($('<a/>').attr('name', anchor));
     },
     'note/note': function(note) {
-      this.node.appendText(note);
+      this.process(note);
     },
     'source/source': function(source) {
       if(this.remove_one_source_line) {
@@ -262,24 +262,7 @@ jQuery.fn.litijs = function(src) {
       });
     },
     'text/text': function(line) {
-      var links = [];
-      line.replace(/([<>]){([^}|]*)(?:\|([^}]*))?}/g, function(match, type, anchor, text, index) {
-        links.push({index:index, match: match, anchor: anchor, text: text || anchor, type: type });
-        return match;
-      });
-      if(links.length == 0) {
-        this.node.appendText(line);
-      } else {
-        this.node.appendText(line.slice(0,links[0].index));
-        _.each.call(this, links, function(link, index) {
-          $('<a/>').text(link.text).attr('href', link.type == '>' ? '#' + link.anchor : link.anchor).appendTo(this.node);
-          if(index < links.length-1) {
-            this.node.appendText(line.slice(link.index + link.match.length, link[index+1].index));
-          } else {
-            this.node.appendText(line.slice(link.index + link.match.length));
-          }
-        });
-      }
+      this.process(line);
     },
     'example/example': function(line) {
       if(line.slice(0,1) == '!') {
@@ -295,6 +278,41 @@ jQuery.fn.litijs = function(src) {
     }
   }, { 
     metadata : {},
+    process: function(line) {
+      var links = [];
+      line = line.replace(/(.*)=>(.*)/, function(match, term, definition) {
+        var last_node = this.node.contents().last().filter('dl');
+        if(last_node.length) this.node = last_node;
+        else this.node = $('<dl/>').appendTo(this.node);
+        this.node = $('<dt/>').appendTo(this.node);
+        this.process(term);
+        this.node = $('<dd/>').appendTo(this.node.parent());
+        this.process(definition);
+        this.node = this.node.parent().parent();
+        return '';
+      }.bind(this));
+      if(!line) return;
+      line.replace(/([@<>]){([^}|]*)(?:\|([^}]*))?}/g, function(match, type, anchor, text, index) {
+        links.push({index:index, match: match, anchor: anchor, text: text || anchor, type: type });
+        return match;
+      });
+      if(links.length == 0) {
+        this.node.appendText(line);
+      } else {
+        this.node.appendText(line.slice(0,links[0].index));
+        _.each.call(this, links, function(link, index) {
+          $('<a/>').text(link.text).attr(
+            link.type == '@' ? 'name' : 'href', 
+            link.type == '>' ? '#' + link.anchor : link.anchor
+          ).appendTo(this.node);
+          if(index < links.length-1) {
+            this.node.appendText(line.slice(link.index + link.match.length, link[index+1].index));
+          } else {
+            this.node.appendText(line.slice(link.index + link.match.length));
+          }
+        });
+      }
+    },
     node: 
       $('<div class="litijs">')
       .appendTo(
@@ -329,25 +347,7 @@ jQuery.fn.litijs.parse = function(source) {
     } else if(source) {
       return result.push({type:'source', text: match});
     } else if(linecomment) {
-      var anchors = [];
-      linecomment.replace(/@{([^}|]*)(?:\|([^}]*))?}/g, function(match, anchor, text, index) {
-        anchors.push({index:index, match: match, anchor: anchor, text: text || anchor});
-        return match;
-      });
-      var note = linecomment;
-      if(anchors.length != 0) {
-        note = linecomment.slice(0,anchors[0].index);
-        _.each.call(this, anchors, function(anchor, index) {
-          note += anchor.text;
-          if(index < anchors.length-1) {
-            note += linecomment.slice(anchor.index + anchor.match.length, anchor[index+1].index);
-          } else {
-            note += linecomment.slice(anchor.index + anchor.match.length);
-          }
-          result.push({type:'anchor', text:anchor.anchor});
-        });
-      }
-      result.push({type:'note', text:note});
+      result.push({type:'note', text:linecomment});
     } else if(comment) {
       var lines = comment.split("\n");
       var html = $('<div/>');

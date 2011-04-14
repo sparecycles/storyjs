@@ -21,14 +21,17 @@
  | A Story must be >{Story.tell|told} to function. 
  | A >{Story.Tale} represents this. Any number of tales can 
  | be created from a single story.  Representation and control of a 
- | live story is in the domain of Story.Tale
+ | live story is in the domain of Story.Tale.
+ |
+ | The Story.Plot structure is a static structure, a 
+ | Tale >{Story.Tale.setup|sets up} plot nodes into plot devices.
  |
 -- API/Interface
- | Each story plot node must handle a few basic functions:
- |   setup       : constructor inside a tale 
- |   update      : update inside a tale, return a truthy expression if the node is not "done".
- |   teardown    : destructor inside a tale
- |   handle(arg) : process events sent to the tale (this hasn't been used yet!)
+ | Each story plot node must handle a few basic functions
+ |   setup       => constructor inside a tale 
+ |   update      => update inside a tale, return a truthy expression if the node is not "done".
+ |   teardown    => destructor inside a tale
+ |   handle(arg) => process events sent to the tale (this hasn't been used yet!)
  |
  | Let's illustrate with the two basic collection plot nodes: 
  |   Story.Sequence and Story.Compound.
@@ -115,7 +118,9 @@
  | And then we can define the same story as
  |
  > WithStyleExample = new Story(
- >   Story.WithStyle(function() { return Story.read('target'); }, { 'background-color': '#8B00FF' }),
+ >   Story.WithStyle(function() { 
+ >     return Story.read('target'); 
+ >   }, { 'background-color': '#8B00FF' }),
  >   Story.Delay(3000)
  > );
  >! TryIt.call(this, WithStyleExample);
@@ -144,8 +149,8 @@
  | across through scope variables, and to the entire tree by handle.  This should allow reuse of
  | nodes across stories.
  |
- | Plot nodes can introduce new scopes, too, which inherit their parent scope and shadow it.
- | (just like local variables).
+ | Plot nodes can introduce new scopes, too, which inherit 
+ | their parent scope and shadow it (just like local variables).
  |
  | Stories are executed with a context, which means that the current tale is
  | set in Story.Tale.context.tale, and the current node 
@@ -154,9 +159,11 @@
  | but that's what's preserved when
  | you wrap a callback function with Story.callback.
  |
+-- Story
+ | @{Story|}
  */
  
-/// @{Story}
+/// 
 /// A story's root node is a compound. To make a sequence, pass an array.
 Story = _.Class(function() {
   this.plot = Story.Compound.apply(null, __args());
@@ -200,8 +207,56 @@ Story = _.Class(function() {
     handle: function(arg) {
       return Story.Tale.context.tale.handle(arg);
     },
+    /// Finds a parent node with the specified name.
+    /// Sometimes you gotta mess with things directly.
+    find: function(name) {
+      var root = Story.Tale.context.device;
+      while(root.parent && root.story.options.name != name) {
+        root = root.parent;
+      }
+      return root;
+    },
+    /// Finds a parent scope with the specified name.
+    /// If it's not found, return the root scope.
+    scope: function(name) {
+      if(name == '.') return Story.Tale.context.device.scope;
+      var node = Story.find(name);
+      return node ? node.scope : Story.Tale.context.tale.scope;
+    },
+    /// Reads a key (or "key@scope") from the scope.
+    read: function(key) {
+      var scope = '.';
+      if(/@/.test(key)) {
+        var parts = key.split('@');
+        key = parts[0];
+        scope = parts[1];
+      }
+      scope = Story.scope(scope);
+      if(scope) return scope[key];
+      else throw new Error("Story.access: No scope named " + scope);
+    },
+    /// Writes a value to key (or "key@scope") to the scope.
+    write: function(key, value) {
+      var scope = '.';
+      if(/@/.test(key)) {
+        var parts = key.split('@');
+        key = parts[0];
+        scope = parts[1];
+      }
+      scope = Story.Tale.scope(scope);
+      if(scope) {
+        var old_value = scope[key];
+        scope[key] = value;
+        return old_value;
+      } else throw new Error("Story.access: No scope named " + scope);
+    },
+/*
+-- Story.Plot
+ | @{Story.Plot|} 
+ | 
+ */
 ///
-/// @{Story.Plot} is responsible for definition of nodes and story construction.
+/// Plot is responsible for definition of nodes and story construction.
 /// It is also the root class of all story nodes.
 ///
     Plot: _.Class(function(arg) {
@@ -239,7 +294,7 @@ Story = _.Class(function() {
         type: 'node'
       },
       classic: {
-        /// @{Story.Plot.Define}(name, constructor, {...proto...}}
+        /// @{Story.Plot.Define}(name, constructor, {...proto...})
         /// Defines a new plot node type, which you can use as Story[name].
         Define: function(name, init, prototype, options) {
           var base = Story.Plot;
@@ -321,6 +376,11 @@ Story = _.Class(function() {
         }
       }
     }),
+/*
+-- Story.Tale
+ |
+ |
+ */
     /// The @{Story.Tale} class is responsible for running stories.
     Tale: _.Class(function(plot, scope) {
       this.device = Object.create(plot);
@@ -364,8 +424,7 @@ Story = _.Class(function() {
         update: function(device) {
           return Story.Tale.Context(device).run('update');
         },
-        /// Use @{Story.Tale.setup}(node)
-        /// to get a device for that node.
+        /// Use @{Story.Tale.setup}(node) to get a device for that node.
         setup: function(node) {
           if(!node) { debugger; return null; }
           var device = Object.create(node);
@@ -378,8 +437,7 @@ Story = _.Class(function() {
           Story.Tale.Context(device).run('setup');
           return device;
         },
-        /// Use @{Story.Tale.teardown}(device)
-        /// to destroy devices that you setup.
+        /// Use @{Story.Tale.teardown}(device) to destroy devices that you setup.
         teardown: function(device) {
           Story.Tale.Context(device).run('teardown');
         },
@@ -421,50 +479,7 @@ Story = _.Class(function() {
           }
         })
       }
-    }),
-    /// Finds a parent node with the specified name.
-    /// Sometimes you gotta mess with things directly.
-    find: function(name) {
-      var root = Story.Tale.context.device;
-      while(root.parent && root.story.options.name != name) {
-        root = root.parent;
-      }
-      return root;
-    },
-    /// Finds a parent scope with the specified name.
-    /// If it's not found, return the root scope.
-    scope: function(name) {
-      if(name == '.') return Story.Tale.context.device.scope;
-      var node = Story.find(name);
-      return node ? node.scope : Story.Tale.context.tale.scope;
-    },
-    /// Reads a key (or "key@scope") from the scope.
-    read: function(key) {
-      var scope = '.';
-      if(/@/.test(key)) {
-        var parts = key.split('@');
-        key = parts[0];
-        scope = parts[1];
-      }
-      scope = Story.scope(scope);
-      if(scope) return scope[key];
-      else throw new Error("Story.access: No scope named " + scope);
-    },
-    /// Writes a value to key (or "key@scope") to the scope.
-    write: function(key, value) {
-      var scope = '.';
-      if(/@/.test(key)) {
-        var parts = key.split('@');
-        key = parts[0];
-        scope = parts[1];
-      }
-      scope = Story.Tale.scope(scope);
-      if(scope) {
-        var old_value = scope[key];
-        scope[key] = value;
-        return old_value;
-      } else throw new Error("Story.access: No scope named " + scope);
-    }
+    })
   }
 });
 

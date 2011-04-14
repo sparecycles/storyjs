@@ -1,4 +1,4 @@
-a,a:visited,a:active,a:hover {
+a[href],a[href]:visited,a[href]:active,a[href]:hover {
   color:#333;
   font-weight:900;
 }
@@ -30,13 +30,13 @@ body {
 }
 .litijs-container .wrapper .note{
   float:left;
-  width:200px;
+  width:230px;
   font-size:14px;
   -webkit-user-select: none;
 }
 .litijs-container .wrapper{
   overflow:hidden;
-  width:980px;
+  width:930px;
 }
 .litijs-container .section{
   display: block;
