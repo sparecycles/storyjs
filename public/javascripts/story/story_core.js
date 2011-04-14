@@ -49,29 +49,29 @@
  |
  | Example:
  |
- >! jQuery.fn.click_and_tell = function(story) {
+ >! jQuery.fn.click_and_tell = function(story, target) {
  >!   return this.click(function() {
  >!     new Story([story.plot, 
  >!       function() { $(this).attr('disabled', false); }.bind(this)
- >!     ]).tell({where: this}); 
+ >!     ]).tell({where: this, target: target}); 
  >!     $(this).attr('disabled', true);
  >!   });
  >! };
- >! window['TryIt'] = function(story) {
- >!   jQuery('<button/>')
- >!   .appendTo(this)
- >!   .text('Try It!')
- >!   .click_and_tell(story);
+ >! window['TryIt'] = function(story, title, target) {
+ >!   var button = jQuery('<button/>')
+ >!     .appendTo(this)
+ >!     .text(title || 'Try It!');
+ >!   if(!target) target = jQuery('<div/>').addClass('target');
+ >!   target.insertAfter(button);
+ >!   button.click_and_tell(story, target);
  >! };
  > TurnTheBackgroundBlueFor3Seconds = new Story({
  >   setup: function() { 
- >     var body = jQuery('body');
- >     this.style = body[0].getAttribute('style') || '';
- >     body.css('color', '#8B00FF');
+ >     this.style = Story.read('target')[0].getAttribute('style') || '';
+ >     Story.read('target').css('background-color', 'red');
  >   },
  >   teardown: function() {
- >     var body = jQuery('body');
- >     body[0].setAttribute('style', this.style);
+ >     Story.read('target')[0].setAttribute('style', this.style);
  >   }
  > }, Story.Delay(1000));
  >! TryIt.call(this, TurnTheBackgroundBlueFor3Seconds);
@@ -115,7 +115,7 @@
  | And then we can define the same story as
  |
  > WithStyleExample = new Story(
- >   Story.WithStyle('body', { color: '#8B00FF' }),
+ >   Story.WithStyle(function() { return Story.read('target'); }, { 'background-color': '#8B00FF' }),
  >   Story.Delay(3000)
  > );
  >! TryIt.call(this, WithStyleExample);
@@ -133,7 +133,9 @@
  >     })).text('End Test!').insertAfter(this.scope.where);
  >   }, 
  >   teardown: function() { this.button.remove(); }
- > }, Story.WithStyle('body', { color: '#8B00FF' }), function() {
+ > }, Story.WithStyle(function() { return Story.read('target'); }, { 
+ >   'background-color': '#8B00FF' 
+ > }), function() {
  >   return !this.scope.done;
  > });
  >! TryIt.call(this, ButtonExample);
@@ -444,7 +446,7 @@ Story = _.Class(function() {
         key = parts[0];
         scope = parts[1];
       }
-      scope = Story.Tale.scope(scope);
+      scope = Story.scope(scope);
       if(scope) return scope[key];
       else throw new Error("Story.access: No scope named " + scope);
     },

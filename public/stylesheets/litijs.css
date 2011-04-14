@@ -106,6 +106,14 @@ button:active {
     ) repeat scroll 0 0 transparent;
 }
 
+.litijs .target {
+	border-radius: 40px;
+	width: 40px;
+	height: 40px;
+	background-color: blue;
+	display: inline-block;
+}
+
 button:disabled {
 	background: lightgray;
         border:#ddd;
