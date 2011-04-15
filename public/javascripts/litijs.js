@@ -199,6 +199,47 @@ jQuery.fn.litijs = function(src, callback) {
     },
     space: function() {
     },
+    haml: {
+      enter: function() {
+        this.haml_stack = [{indentation: -1, haml: []}];
+      },
+      leave: function() {
+        var haml;
+        while(this.haml_stack.length) haml = this.haml_stack.pop().haml;
+        console.log("%o : %o", haml, JSON.stringify(haml));
+        if(haml) _.each.call(this, haml, function writeHtml(haml) {
+          var parsed;
+          haml[0].trim().replace(/^\s*(?:%([^.]*))?(?:#([a-zA-Z0-9.-]+))?((?:\.[a-zA-Z0-9.-]+)*)?({[^}]*})?(.*)/,
+            function(match, tag, id, klass, attr, text) {
+              parsed = {
+                node: !!(tag || klass || id),
+                tag: tag || 'div',
+                klass: klass ? klass.slice(1).split(',').join(' ') : '',
+                attr: _.either(function() { return JSON.parse(attr); }).result || {},
+                text: (text || '').trim(),
+                id: id || false
+              };
+            }
+          );
+
+          if(!parsed.node && parsed.text) {
+            this.node.appendText(parsed.text);
+          } else {
+            var node = $(_.evil_format('<%{tag}/>', { tag: parsed.tag }))
+               .addClass(parsed.klass)
+               .attr(parsed.attr)
+               .text(parsed.text)
+               .appendTo(this.node);
+            this.node = node;
+            if(parsed.id) this.node.attr('id', parsed.id);
+            _.each.call(this, haml.slice(1), function(haml) {
+              writeHtml.call(this, haml);
+            });
+            this.node = this.node.parent();
+          }
+        });
+      }
+    },
     text: {
       enter: function() {
         this.node = $('<p/>').appendTo(this.node);
@@ -263,6 +304,34 @@ jQuery.fn.litijs = function(src, callback) {
     },
     'text/text': function(line) {
       this.process(line);
+    },
+    'haml/haml': function(haml) {
+      var top = this.haml_stack.pop();
+      var indentation = -1;
+      haml.replace(/[^\s]/, function(m,i) { indentation = i; });
+      haml = haml.slice(indentation);
+      if(indentation < 0) return;
+      console.log("indent: %o, compared to top indent: %o", indentation, top.indentation);
+      if(indentation > top.indentation) {
+        var haml_node = [haml];
+        top.haml.push(haml_node);
+        this.haml_stack.push(top);
+        this.haml_stack.push({haml:haml_node, indentation:indentation});
+      } //else if(indentation == top.indentation) {
+        //top.haml.push(haml);
+        //this.haml_stack.push(top);
+      //} 
+      else {
+        var matched = false;
+        while(indentation <= top.indentation) {
+          console.log("unwind: %o, compared to top indent: %o", indentation, top.indentation);
+          if(indentation == top.indentation) matched = true;
+          top = this.haml_stack.pop();
+        }
+        if(!matched) console.error('mismatched indentation!');
+        top.haml.push([haml]);
+        this.haml_stack.push(top);
+      }
     },
     'example/example': function(line) {
       if(line.slice(0,1) == '!') {
@@ -367,6 +436,8 @@ jQuery.fn.litijs.parse = function(source) {
           return result.push({type: 'text', text:line});
         case ' >':
           return result.push({type: 'example', text:line});
+        case ' +':
+          return result.push({type: 'haml', text:line});
         }
       });
     }
