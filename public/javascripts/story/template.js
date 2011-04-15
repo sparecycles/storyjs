@@ -23,11 +23,33 @@
  |   defineTemplate => registers a named template based on the selector and some rendering rules.
  |
 -- Examples
- | haml
- + %span 
- +   %button.test word
- +     another word
- | haml
+ | 
+ + %span
+ +   %button.template template
+ +   %button.clear clear
+ +   .example
+ +     List
+ +     %ol
+ +       %li items...
+ >! this.last_haml.insertAfter(node);
+ >! new function(sample) {
+ >    $('.template', sample).click(function() {
+ >      $('.example', sample).template(new MVC({items: [
+ >        {text: 'a', color: 'red'}, 
+ >        {text: 'b', color: 'green'}, 
+ >        {text: 'c', color: 'blue'}, 
+ >      ]}), {
+ >        'li' : { $each : { item: '.items' },
+ >          '@style' : { color: 'item.color' },
+ >          '@text' : 'item.text',
+ >        }
+ >      });
+ >    });
+ >    $('.clear', sample).click(function() {
+ >      $('.example', sample).clearTemplate();
+ >    });
+ >! }(this.last_haml);
+ |
 -- Template
  */
 /// Template embodies a node in the tree of renders.

@@ -207,37 +207,43 @@ jQuery.fn.litijs = function(src, callback) {
         var haml;
         while(this.haml_stack.length) haml = this.haml_stack.pop().haml;
         console.log("%o : %o", haml, JSON.stringify(haml));
-        if(haml) _.each.call(this, haml, function writeHtml(haml) {
-          var parsed;
-          haml[0].trim().replace(/^\s*(?:%([^.]*))?(?:#([a-zA-Z0-9.-]+))?((?:\.[a-zA-Z0-9.-]+)*)?({[^}]*})?(.*)/,
-            function(match, tag, id, klass, attr, text) {
-              parsed = {
-                node: !!(tag || klass || id),
-                tag: tag || 'div',
-                klass: klass ? klass.slice(1).split(',').join(' ') : '',
-                attr: _.either(function() { return JSON.parse(attr); }).result || {},
-                text: (text || '').trim(),
-                id: id || false
-              };
-            }
-          );
+        if(haml) {
+          this.last_haml = this.node = $('<div/>').addClass('haml').appendTo(this.node);
+          _.each.call(this, haml, function writeHtml(haml) {
+            var parsed;
+            haml[0].trim().replace(/^\s*(?:%([^.{\s]*))?(?:#([a-zA-Z0-9.-]+))?((?:\.[a-zA-Z0-9.-]+)*)?({[^}]*})?(.*)/,
+              function(match, tag, id, klass, attr, text) {
+                parsed = {
+                  node: !!(tag || klass || id),
+                  tag: tag || 'div',
+                  klass: klass ? klass.slice(1).split(',').join(' ') : '',
+                  attr: _.either(function() { return JSON.parse(attr); }).result || {},
+                  text: (text || '').trim(),
+                  id: id || false
+                };
+              }
+            );
 
-          if(!parsed.node && parsed.text) {
-            this.node.appendText(parsed.text);
-          } else {
-            var node = $(_.evil_format('<%{tag}/>', { tag: parsed.tag }))
-               .addClass(parsed.klass)
-               .attr(parsed.attr)
-               .text(parsed.text)
-               .appendTo(this.node);
-            this.node = node;
-            if(parsed.id) this.node.attr('id', parsed.id);
-            _.each.call(this, haml.slice(1), function(haml) {
-              writeHtml.call(this, haml);
-            });
-            this.node = this.node.parent();
-          }
-        });
+            if(!parsed.node && parsed.text) {
+              this.node.appendText(parsed.text);
+            } else {
+              var node = $(_.evil_format('<%{tag}/>', { tag: parsed.tag }))
+                 .addClass(parsed.klass)
+                 .attr(parsed.attr)
+                 .text(parsed.text)
+                 .appendTo(this.node);
+              this.node = node;
+              if(parsed.id) this.node.attr('id', parsed.id);
+              _.each.call(this, haml.slice(1), function(haml) {
+                writeHtml.call(this, haml);
+              });
+              var result = this.node;
+              this.node = this.node.parent();
+              return result;
+            }
+          });
+          this.node = this.node.parent();
+        }
       }
     },
     text: {
@@ -256,7 +262,7 @@ jQuery.fn.litijs = function(src, callback) {
       leave: function() {
         this.node = this.node.parent();
         try {
-          new Function('{' + this.example_code + '}').call($('<div class="nocode"/>').appendTo(this.node));
+          new Function('node', '{' + this.example_code + '}').call(this, $('<div class="nocode"/>').appendTo(this.node));
         } catch(ex) {
           console.log('Failed to eval: %o: %o:%o', this.example_code, ex, ex.stack);
         }
@@ -317,11 +323,7 @@ jQuery.fn.litijs = function(src, callback) {
         top.haml.push(haml_node);
         this.haml_stack.push(top);
         this.haml_stack.push({haml:haml_node, indentation:indentation});
-      } //else if(indentation == top.indentation) {
-        //top.haml.push(haml);
-        //this.haml_stack.push(top);
-      //} 
-      else {
+      } else {
         var matched = false;
         while(indentation <= top.indentation) {
           console.log("unwind: %o, compared to top indent: %o", indentation, top.indentation);
@@ -410,6 +412,7 @@ jQuery.fn.litijs = function(src, callback) {
     dataType: 'html'
   });
 };
+
 jQuery.fn.litijs.parse = function(source) {
   var fn = jQuery.fn.litijs;
   var result = [];

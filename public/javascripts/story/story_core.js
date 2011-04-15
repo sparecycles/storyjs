@@ -70,7 +70,7 @@
  >!   button.click_and_tell(story, target);
  >! };
  >!
- >!TryIt.call(this,
+ >!TryIt.call(node,
  > new Story({
  >   setup: function() { 
  >     this.style = Story.read('target')[0].getAttribute('style') || '';
@@ -120,7 +120,7 @@
  |
  | And then we can define the same story as
  |
- >!TryIt.call(this,
+ >!TryIt.call(node,
  > new Story(
  >   Story.WithStyle(function() { 
  >     return Story.read('target'); 
@@ -135,7 +135,7 @@
  | A Tale has a scope, which is just a javascript object which can be used to pass 
  | information between plot nodes.
  | 
- >!TryIt.call(this,
+ >!TryIt.call(node,
  > new Story({
  >   setup: function() {
  >     this.button = jQuery('<button/>').click(Story.callback(function() {
