@@ -1,5 +1,6 @@
 !!!XML
 !!!5
+- @less_filename = 'less-1.0.41.min'
 %html
   %head
     %title
@@ -11,6 +12,17 @@
           = "#{File.new("public/javascripts/#{js}.js").read}"
       - else
         %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
+    - ((yield :import_less) || "").split(/\s+/).uniq.each do |less|
+      - @less_needed = true
+      %link{:href=>"/stylesheets/#{less}.less", |
+            :type=>'text/css',                  |
+            :rel=>'stylesheet/less'}            |
+    - if @less_needed
+      - if @inline_javascript
+        :javascript
+          = "#{File.new("public/javascripts/#{@less_filename}.js").read}"
+      - else
+        %script{:src=>"/javascripts/#{@less_filename}.js", :type=>'text/javascript'}
     - ((yield :import_stylesheets) || "").split(/\s+/).uniq.each do |css|
       - if @inline_stylesheet
         %style

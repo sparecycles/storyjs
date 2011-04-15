@@ -74,7 +74,7 @@
 
     Dialog = _.Class(function(type, content, buttons, handler) {
       var self = this;
-      var model = new MVC(_.overlay({}, content, {
+      var model = new Template.ViewModel(_.overlay({}, content, {
         type: type,
         dialog: {
           self: self,

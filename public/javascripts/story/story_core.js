@@ -17,16 +17,26 @@
  | while the leaves of the tree are action nodes which perform tasks.
  |
 -- Overview
- | Construction of the tree is the job of >{Story.Plot}.
+ | Construction of the plot node tree is the job of >{Story.Plot}.
+ | All plot nodes inherit from Story.Plot, and it has class 
+ | methods for converting and registering the nodes in the 
+ | structure.
  |
  | A Story must be >{Story.tell|told} to function. 
  | A >{Story.Tale} represents an active story. Any number of tales can 
- | be created from a single story.  The external API for a 
- | live story is in the domain of Story.Tale.
+ | be created from a single story, and operate independently.
  |
- | The Story.Plot structure is a static structure,
- | >{Story.Plot.Device} is where to find functions for new node 
- | implementation and internal management of a story.
+ | A Plot structure is rigid and unchanging once built.
+ | a Tale is essentially a subtree of the plot structure 
+ | made of "plot device" nodes.
+ |
+ | A device is instantated from a plot node using javascript's
+ | prototypal inheritance (betcha this is the first time you've
+ | seen a good use of prototyping!).  If you don't know about prototyping
+ | check out >{Story.Plot.Device.setup} to see how it's done.
+ | By the way, when implementing your own plot container nodes, 
+ | >{Story.Plot.Device} has the API functions that manage
+ | devices.
  |
 -- API/Interface
  | Each story plot node must handle a few basic functions
@@ -182,8 +192,9 @@ Story = _.Class(function() {
   },
   classic: { 
     /// @{Story.callback} wraps a function so it can restore tale context when
-    /// it is executed.  It preserves static methods of Story and "this" 
-    /// inside the function.  After running, the story will be updated.
+    /// it is executed.  It preserves the operation of class methods 
+    /// of Story and "this" inside the function. 
+    /// After running, the tale will be updated.
     callback: function(fn) {
       var args = __args();
       var device = Story.Tale.context.device;
@@ -263,18 +274,23 @@ Story = _.Class(function() {
         children: {}
       };
     }, {
-      /// base implementations of plot node functions. (see >{Story.Tale})
+      /// base implementations of plot node functions. 
+      /// (see >{Story.Tale} for the public API to these)
       /// @{Story.Plot.update|}
       /// @{Story.Plot.setup|}
       /// @{Story.Plot.teardown|}
       /// @{Story.Plot.handle|}
+      /// You actually NEVER want to call these functions directly,
+      /// go through >{Story.Plot.Device} to make sure
+      /// they are called with their 
+      /// >{Story.Tale.Context|context}
       proto: {
         update: function() { return false; },
         setup: function() { },
         teardown: function() { },
         handle: function(arg) { },
-        /// Options is a setup function,
-        /// the only option right now is 'name'.
+        /// Options is used to setup the plot node,
+        /// and is called directly.
         Options: function(opts) { 
           var opts = _.overlay({}, opts);
           if(opts.name) {
@@ -292,6 +308,8 @@ Story = _.Class(function() {
           _.overlay(this.story.options, opts);
           return this; 
         },
+        /// This gets hidden by subclases,
+        /// for informational purposes only.
         type: 'node'
       },
       classic: {
@@ -378,16 +396,16 @@ Story = _.Class(function() {
 /*
 -- Story.Plot.Device
  |
+ | 
  */
         Device: _.Class(function() {
         }, {
           classic: {
-            /// Use @{Story.Plot.Device.update}(device)
-            /// to update nodes from your own Story.Plot.Define nodes.
+            /// @{Story.Plot.Device.update|}
             update: function(device) {
               return Story.Tale.Context(device).run('update');
             },
-            /// Use @{Story.Plot.Device.setup}(node) to get a device for that node.
+            /// @{Story.Plot.Device.setup|}
             setup: function(node) {
               if(!node) { debugger; return null; }
               var device = Object.create(node);
@@ -400,12 +418,11 @@ Story = _.Class(function() {
               Story.Tale.Context(device).run('setup');
               return device;
             },
-            /// Use @{Story.Plot.Device.teardown}(device) to destroy devices that you setup.
+            /// @{Story.Plot.Device.teardown|}
             teardown: function(device) {
               Story.Tale.Context(device).run('teardown');
             },
-            /// Use @{Story.Plot.Device.handle}(device, arg)
-            /// to pass on handle(...) to your active device(s).
+            /// @{Story.Plot.Device.handle|}
             handle: function(device, arg) {
               return Story.Tale.Context(device).run('handle', arg);
             }

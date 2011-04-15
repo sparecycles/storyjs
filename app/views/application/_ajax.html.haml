@@ -43,7 +43,7 @@
     });
     ProgressBar = _layer.Class(function(title) {
       var self = this;
-      var model = new MVC({
+      var model = new Template.ViewModel({
         title: title,
         percent: 0,
         cancel: function() { self.close(); }

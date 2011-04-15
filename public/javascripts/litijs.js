@@ -182,16 +182,25 @@ Litijs = _.Class(function(selector, src, callback) {
       }
     },
     note: {
-      enter: function(text) {
+      enter: function() {
         this.node = $('<div class="note"/>').appendTo(this.node).wrap('<div class="wrapper"/>');
+        this.node = $('<p/>').appendTo(this.node);
       },
       leave: function() {
-        this.node = this.node.parent();
+        this.node = this.node.parent().parent();
       }
     },
     title: {
       enter: function() {
         this.node = $('<h1/>').appendTo(this.node);
+      },
+      leave: function() {
+        this.node = this.node.parent();
+      }
+    },
+    subtitle: {
+      enter: function() {
+        this.node = $('<h2/>').appendTo(this.node);
       },
       leave: function() {
         this.node = this.node.parent();
@@ -206,42 +215,48 @@ Litijs = _.Class(function(selector, src, callback) {
       leave: function() {
         var haml;
         while(this.haml_stack.length) haml = this.haml_stack.pop().haml;
+        console.log("haml: %o => %o", haml, JSON.stringify(haml));
         if(haml) {
-          this.last_haml = this.node = $('<div/>').addClass('haml').appendTo(this.node);
-          _.each.call(this, haml, function writeHtml(haml) {
-            var parsed;
-            haml[0].trim().replace(/^\s*(?:%([^.{\s]*))?(?:#([a-zA-Z0-9.-]+))?((?:\.[a-zA-Z0-9.-]+)*)?({[^}]*})?(.*)/,
-              function(match, tag, id, klass, attr, text) {
-                parsed = {
-                  node: !!(tag || klass || id),
-                  tag: tag || 'div',
-                  klass: klass ? klass.slice(1).split(',').join(' ') : '',
-                  attr: _.either(function() { return JSON.parse(attr); }).result || {},
-                  text: (text || '').trim(),
-                  id: id || false
-                };
+          this.haml = this.node 
+                    = $('<div/>').addClass('haml').appendTo(this.node);
+          function writeHtml(parent, haml) {
+            var node = parent;
+            _.each(haml, function(haml) {
+              var parsed;
+              if(haml instanceof Array) {
+                return writeHtml(node, haml);
               }
-            );
+              haml.trim().replace(
+                /^\s*(?:%([^.{\s]*))?(?:#([a-zA-Z0-9.-]+))?((?:\.[a-zA-Z0-9.-]+)*)?({[^}]*})?(.*)/,
+                function(match, tag, id, klass, attr, text) {
+                  parsed = {
+                    node: !!(tag || klass || id),
+                    tag: tag || 'div',
+                    klass: klass ? klass.slice(1).split(',').join(' ') : '',
+                    attr: _.either(function() { return JSON.parse(attr); }).result || {},
+                    text: (text || '').trim(),
+                    id: id || false
+                  };
+                }
+              );
 
-            if(!parsed.node && parsed.text) {
-              this.node.appendText(parsed.text);
-            } else {
-              var node = $(_.evil_format('<%{tag}/>', { tag: parsed.tag }))
-                 .addClass(parsed.klass)
-                 .attr(parsed.attr)
-                 .text(parsed.text)
-                 .appendTo(this.node);
-              this.node = node;
-              if(parsed.id) this.node.attr('id', parsed.id);
-              _.each.call(this, haml.slice(1), function(haml) {
-                writeHtml.call(this, haml);
-              });
-              var result = this.node;
-              this.node = this.node.parent();
-              return result;
-            }
-          });
+              console.log('writing; %o -> %o', haml, parsed);
+
+              if(!parsed.node && parsed.text) {
+                parent.appendText(parsed.text);
+              } else {
+                node = $(_.evil_format('<%{tag}/>', { tag: parsed.tag }))
+                   .addClass(parsed.klass)
+                   .attr(parsed.attr)
+                   .text(parsed.text)
+                   .appendTo(parent);
+                if(parsed.id) node.attr('id', parsed.id);
+              }
+            });
+          };
+          writeHtml(this.node, haml);
           this.node = this.node.parent();
+          Litijs.show_html(this.haml).appendTo(this.node);
         }
       }
     },
@@ -261,6 +276,10 @@ Litijs = _.Class(function(selector, src, callback) {
       leave: function() {
         this.example = this.node;
         this.node = this.node.parent();
+        if(this.example.contents().length == 0) {
+          this.example.remove();
+          delete this.example;
+        }
         try {
           _.local.call(Litijs, { context: this }, 
             new Function('node',
@@ -321,12 +340,16 @@ Litijs = _.Class(function(selector, src, callback) {
       var indentation = -1;
       haml.replace(/[^\s]/, function(m,i) { indentation = i; });
       haml = haml.slice(indentation);
-      if(indentation < 0) return;
+      console.log("i: %o, haml: %o\n\ttop: %o\n\tstack: %o", indentation, haml, JSON.stringify(top), JSON.stringify(this.haml_stack));
+      if(indentation < 0) { this.haml_stack.push(top); return; }
       if(indentation > top.indentation) {
         var haml_node = [haml];
         top.haml.push(haml_node);
         this.haml_stack.push(top);
         this.haml_stack.push({haml:haml_node, indentation:indentation});
+      } else if(indentation == top.indentation) {
+        top.haml.push(haml);
+        this.haml_stack.push(top);
       } else {
         var matched = false;
         while(indentation <= top.indentation) {
@@ -351,29 +374,39 @@ Litijs = _.Class(function(selector, src, callback) {
       var anchor = title.trim().replace(/\s+/g, '_');
       this.node.append($('<a/>').attr('name', anchor).attr('id', 'litijs.' + anchor));
       this.node.appendText(title);
+    },
+    'subtitle/subtitle': function(title) {
+      this.process(title);
     }
   }, { 
     metadata : {},
     process: function(line) {
       var links = [];
+      var dtdd = false;
       line = line.replace(/(.*)=>(.*)/, function(match, term, definition) {
-        var last_node = this.node.contents().last().filter('dl');
+        var last_node = this.node.contents().last().filter('.definitions');
         if(last_node.length) this.node = last_node;
-        else this.node = $('<dl/>').appendTo(this.node);
-        this.node = $('<dt/>').appendTo(this.node);
+        else this.node = $('<div/>').appendTo(this.node).addClass('definitions');
+        this.node = $('<div/>').appendTo(this.node).addClass('entry');
+        this.node = $('<div/>').appendTo(this.node).addClass('term');
         this.process(term);
-        this.node = $('<dd/>').appendTo(this.node.parent());
+        this.node = $('<div/>').appendTo(this.node.parent()).addClass('definition');
         this.process(definition);
-        this.node = this.node.parent().parent();
+        this.node = this.node.parent().parent().parent();
+        dtdd = true;
         return '';
       }.bind(this));
-      if(!line) return;
+      if(dtdd) return;
       line.replace(/([@<>]){([^}|]*)(\|[^}]*)?}/g, function(match, type, anchor, text, index) {
         links.push({index:index, match: match, anchor: anchor, text: text ? text.slice(1) : anchor, type: type });
         return match;
       });
       if(links.length == 0) {
-        this.node.appendText(line);
+        if(!/[^\s]/.test(line)) {
+          this.node = $('<p/>').appendTo(this.node.parent());
+        } else {
+          this.node.appendText(line);
+        }
       } else {
         this.node.appendText(line.slice(0,links[0].index));
         _.each.call(this, links, function(link, index) {
@@ -418,13 +451,13 @@ Litijs = _.Class(function(selector, src, callback) {
     parse: function(source) {
       var fn = jQuery.fn.litijs;
       var result = [];
-      source.replace(/(?:[ \t]*\/\/\/(.*))|(\/\*(?:[^*]|\*[^\/])*\*\/)|((?:[^\/]|\/(?:[^*\/]|\/[^\/]))*(?:[^\/ \t]|\/(?:[^*\/ \t]|\/[^\/ \t]))+)/g, function(match, linecomment, comment, source) {
+      source.replace(/(?:[ \t]*(\/\/\/.*))|(\/\*(?:[^*]|\*[^\/])*\*\/)|((?:[^\/]|\/(?:[^*\/]|\/[^\/]))*(?:[^\/ \t]|\/(?:[^*\/ \t]|\/[^\/ \t]))+)/g, function(match, linecomment, comment, source) {
         if(!match || !/[^\s]/.test(match)) {
           return "";
         } else if(source) {
           return result.push({type:'source', text: source});
         } else if(linecomment) {
-          result.push({type:'note', text:linecomment});
+          result.push({type:'note', text:linecomment.slice(3)});
         } else if(comment) {
           var lines = comment.split("\n");
           var html = $('<div/>');
@@ -434,6 +467,8 @@ Litijs = _.Class(function(selector, src, callback) {
             switch(header) {
             case '--': 
               return result.push({type: 'title', text:line});
+            case '-|': 
+              return result.push({type: 'subtitle', text:line});
             case ' |':
               if(!/[^\s]/.test(line)) {
                 return result.push({type: 'space', text:line});

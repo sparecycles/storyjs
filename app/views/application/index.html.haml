@@ -13,7 +13,7 @@
 - content_for :script do
   :plain
     $('#template .empty').defineTemplate('empty', {});
-    var main_content = new MVC({template:'empty'});
+    var main_content = new Template.ViewModel({template:'empty'});
     $('.main-content .template').template(main_content, {
       '.': {
         $template: '.template',
@@ -130,8 +130,8 @@
         ]
       ]}
     ]));
-    var canvas_mvc = new MVC({width: 400, height: 300});
-    $('<div/>').appendTo('body').template(canvas_mvc, {
+    var canvas_model = new Template.ViewModel({width: 400, height: 300});
+    $('<div/>').appendTo('body').template(canvas_model, {
       '.' : { $template: '=image-loader' }
     });
     $('<button>dialog</button>')
