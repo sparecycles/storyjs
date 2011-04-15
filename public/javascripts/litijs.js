@@ -340,9 +340,9 @@ Litijs = _.Class(function(selector, src, callback) {
       var indentation = -1;
       haml.replace(/[^\s]/, function(m,i) { indentation = i; });
       haml = haml.slice(indentation);
-      console.log("i: %o, haml: %o\n\ttop: %o\n\tstack: %o", indentation, haml, JSON.stringify(top), JSON.stringify(this.haml_stack));
       if(indentation < 0) { this.haml_stack.push(top); return; }
       if(indentation > top.indentation) {
+        console.log("i: %o, haml: %o\n\ttop: %o\n\tstack: %o", indentation, haml, JSON.stringify(top), JSON.stringify(this.haml_stack));
         var haml_node = [haml];
         top.haml.push(haml_node);
         this.haml_stack.push(top);
@@ -352,12 +352,11 @@ Litijs = _.Class(function(selector, src, callback) {
         this.haml_stack.push(top);
       } else {
         var matched = false;
-        while(indentation <= top.indentation) {
-          if(indentation == top.indentation) matched = true;
+        while(indentation < top.indentation) {
           top = this.haml_stack.pop();
         }
-        if(!matched) console.error('mismatched indentation!');
-        top.haml.push([haml]);
+        while(indentation > top.indentation) console.error('mismatched indentation!');
+        top.haml.push(haml);
         this.haml_stack.push(top);
       }
     },

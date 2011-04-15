@@ -31,13 +31,38 @@
  >!   setup.call(context, context.haml);
  >!   ShowIt.last = context.haml.insertAfter(context.example);
  >! };
--| Example
- | These two buttons and a list,
+-| Examples
+ |
+ | Like any decent templating engine, we should be able to do
+ | replacements.
+ + %span
+ +   %input{"placeholder":"change me"}
+ +   result:
+ +   %span.templated
+ |
+ >!ShowIt(function(sample) {
+ >  var model = new Template.ViewModel({result: 'change me'});
+ >  $('.templated', sample).template(model, {
+ >    '.' : '.result'
+ >  });
+ >  var interval;
+ >  $('input', sample).change(function() { 
+ >    model.data('result', $(this).val()); 
+ >  }).focus(function() {
+ >    clearInterval(interval); 
+ >    interval = setInterval(function() {$(this).change();}.bind(this), 50);
+ >  }).blur(function() { clearInterval(interval); });
+ >!});
+ >! ShowIt.last.appendTo(this.node);
+ |
+ | We can do iterations using $each and $for
  + %button.template template
  + %button.clear clear
  + .example
- +   %ol
- +     %li items...
+ +   %ol.each $each : { item : '.items' }
+ +     %li '@text' : 'item.text'
+ +   %ol.for $for : '.items'
+ +     %li '@text' : '.text'
  | ... can be rendered by binding template and clearTemplate to
  | the buttons.
  >! ShowIt(function(sample) {
@@ -47,9 +72,13 @@
  >        {text: 'b', color: 'green'}, 
  >        {text: 'c', color: 'blue'}, 
  >      ]}), {
- >        'li' : { $each : { item: '.items' },
+ >        '.each>li' : { $each : { item: '.items' },
  >          '@style' : { color: 'item.color' },
- >          '@text' : 'item.text',
+ >          '@text' : 'item.text'
+ >        },
+ >        '.for>li' : { $for : '.items',
+ >          '@text' : '.text',
+ >          '@style' : { color: '.color' }
  >        }
  >      });
  >    });
@@ -57,8 +86,12 @@
  >      $('.example', sample).clearTemplate();
  >    });
  >! });
- | which produces
+ | The difference being that $each introduces a scope
+ | variable, while $for adjusts the root data context.
+ |
+ | The results are the same.
  >! ShowIt.last.appendTo(this.node);
+ |
  |
 -- API
  | 
@@ -278,6 +311,9 @@ Template = _.Class(function(self, action) {
     /// but delays on the final read.
     navigate: function(path) {
       var navi = Template.navigate_(path, Template.context());
+      if(typeof navi[0] !== 'function') {
+        debugger;
+      }
       return navi[0](navi[1]);
     },
     /// @{Template.update} causes an update to
@@ -421,7 +457,7 @@ Template = _.Class(function(self, action) {
           if(list) _.range.call(this, 0, list('length')(), function(index) {
             Template(this, function() {
               var $this = $(this);
-              Template.context().data = list(index)();
+              Template.context().data = list(index);
               Template.scope({'#context': Template.context().data});
               Template.render.call(
                 Template.inserted($this.clone().insertBefore($this))

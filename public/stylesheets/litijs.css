@@ -115,6 +115,45 @@ button:active {
     ) repeat scroll 0 0 transparent;
 }
 
+.litijs .haml {
+	margin: 2ex;
+	border-top:  2px solid gray;
+	border-bottom:  2px solid gray;
+	border-radius: 20px;
+	padding: 10px;
+    width: 600px;
+}
+
+.litijs .definitions {
+	display: table;
+	border-top:  2px solid gray;
+	border-bottom:  2px solid gray;
+	border-radius: 20px;
+}
+
+.litijs .definitions .entry {
+	border: none;
+	overflow: hidden;
+	display: table-row;
+}
+.litijs .definitions .entry:first-child {
+}
+.litijs .definitions .entry:last-child {
+}
+
+.litijs .definitions .entry .term {
+	width: 30%;
+	padding-right: 10%;
+    text-align: right;
+	display: table-cell;
+}
+
+.litijs .definitions .entry .definition {
+	width: 60%;
+    text-align: left;
+	display: table-cell;
+}
+
 .litijs .target {
 	border-radius:40px;
 	width:40px;
