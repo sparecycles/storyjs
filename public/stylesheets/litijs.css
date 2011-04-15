@@ -1,9 +1,22 @@
-a[href],a[href]:visited,a[href]:active,a[href]:hover {
+.litijs-container{
+  width:1000px;
+  margin:0 auto;
+}
+.litijs a[href],
+.litijs a[href]:visited,
+.litijs a[href]:active,
+.litijs a[href]:hover {
   color:#333;
   font-weight:900;
 }
 body {
-  font-family:"HelveticaNeue-Light","Helvetica Neue",Helvetica,Arial,Verdana,sans-serif;
+  font-family:
+	"HelveticaNeue-Light",
+  	"Helvetica Neue",
+	Helvetica,
+	Arial,
+	Verdana,
+	sans-serif;
   color:#333;
   background-color:#FAFAFF;
 }
@@ -16,52 +29,48 @@ body {
   width:600px;
   padding-bottom:10px;
 }
-.litijs-container .wrapper pre {
-  float:right;
-  width:600px;
+.litijs pre {
+  background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 white;
+  -moz-box-shadow: 3px 3px 3px #666;
+  -webkit-box-shadow: 3px 3px 3px #666;
+  box-shadow: 3px 3px 3px #666;
+  line-height: 20px;
+  font-size: 14px;
+  border: none;
   margin:0;
   padding:0;
-  -moz-box-shadow: 4px 0 3px -1px #666;
-  padding-left: 35px;
+  padding-left: 30px;
   margin-right: 5px;
-  -webkit-box-shadow: 4px 0 3px -1px #666;
-  box-shadow: 4px 0 3px -1px #666;
-  border: none;
 }
-.litijs-container .wrapper .note{
-  float:left;
-  width:230px;
+.litijs .wrapper pre {
+  float:right;
+  width:590px;
+}
+
+.litijs .wrapper .note p{
+  width:300px;
   font-size:14px;
-  -webkit-user-select: none;
+  margin: 0;
 }
-.litijs-container .wrapper{
+.litijs .wrapper .note{
+  float:left;
+  margin: 0px;
+}
+.litijs .wrapper{
   overflow:hidden;
   width:930px;
 }
-.litijs-container .section{
+.litijs .section{
   display: block;
 }
-.litijs-container{
-  width:1000px;
-  margin:0 auto;
-}
-h1{
+h1,
+h2{
     font-weight: 700;
     text-shadow: 1px 1px 1px #CCCCCC;
 }
-.litijs-container pre {
-    background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 white;
-    font-size: 14px;
-    -moz-box-shadow: 3px 3px 3px #666;
-    -webkit-box-shadow: 3px 3px 3px #666;
-    box-shadow: 3px 3px 3px #666;
-    line-height: 20px;
-    padding-left: 30px;
-    padding-bottom:10px;
-    padding-top: 0;
-}
 
-.litijs-container .wrapper:last-child pre {
+.litijs .wrapper:last-child pre {
+  padding-bottom:10px;
   /* background: red;*/
 }
 button{
@@ -94,7 +103,7 @@ button{
 button:active {
     -moz-border-radius: 0.5em 0.5em 0.5em 0.5em;
     -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    background: -moz-linear-gradient(center top , #575757, #888888) repeat scroll 0 0 transparent;
+    background: -moz-linear-gradient(center top, #575757, #888888) repeat scroll 0 0 transparent;
     -webkit-border-radius: 0.5em 0.5em 0.5em 0.5em;
     -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     background: -webkit-gradient(
@@ -107,14 +116,14 @@ button:active {
 }
 
 .litijs .target {
-	border-radius: 40px;
-	width: 40px;
-	height: 40px;
-	background-color: blue;
-	display: inline-block;
+	border-radius:40px;
+	width:40px;
+	height:40px;
+	background-color:blue;
+	display:inline-block;
 }
 
-button:disabled {
-	background: lightgray;
-        border:#ddd;
+.litijs button:disabled {
+	background:lightgray;
+    border:#ddd;
 }
