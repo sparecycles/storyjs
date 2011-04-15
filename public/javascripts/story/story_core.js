@@ -63,14 +63,13 @@
  >! };
  >! window['TryIt'] = function(story, title, target) {
  >!   var button = jQuery('<button/>')
- >!     .appendTo(this)
+ >!     .appendTo(Litijs.context.node)
  >!     .text(title || 'Try It!');
  >!   if(!target) target = jQuery('<div/>').addClass('target');
  >!   target.insertAfter(button);
  >!   button.click_and_tell(story, target);
  >! };
- >!
- >!TryIt.call(node,
+ >!TryIt(
  > new Story({
  >   setup: function() { 
  >     this.style = Story.read('target')[0].getAttribute('style') || '';
@@ -120,7 +119,7 @@
  |
  | And then we can define the same story as
  |
- >!TryIt.call(node,
+ >!TryIt(
  > new Story(
  >   Story.WithStyle(function() { 
  >     return Story.read('target'); 
@@ -135,18 +134,18 @@
  | A Tale has a scope, which is just a javascript object which can be used to pass 
  | information between plot nodes.
  | 
- >!TryIt.call(node,
+ >!TryIt(
  > new Story({
  >   setup: function() {
  >     this.button = jQuery('<button/>').click(Story.callback(function() {
- >       this.scope.done = true;
+ >       Story.write('done', true);
  >     })).text('End Test!').insertAfter(this.scope.where);
  >   }, 
  >   teardown: function() { this.button.remove(); }
  > }, Story.WithStyle(function() { return Story.read('target'); }, { 
  >   'background-color': '#8B00FF' 
  > }), function() {
- >   return !this.scope.done;
+ >   return !Story.read('done');
  > })
  >!);
  |
@@ -246,7 +245,7 @@ Story = _.Class(function() {
         key = parts[0];
         scope = parts[1];
       }
-      scope = Story.Tale.scope(scope);
+      scope = Story.scope(scope);
       if(scope) {
         var old_value = scope[key];
         scope[key] = value;

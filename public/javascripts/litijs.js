@@ -162,7 +162,7 @@ StateMachine = _.Class(function(init, states, transitions, self) {
   }
 });
 
-jQuery.fn.litijs = function(src, callback) {
+Litijs = _.Class(function(selector, src, callback) {
   var emit = new StateMachine('file', {
     code: {
       enter: function() {
@@ -206,7 +206,6 @@ jQuery.fn.litijs = function(src, callback) {
       leave: function() {
         var haml;
         while(this.haml_stack.length) haml = this.haml_stack.pop().haml;
-        console.log("%o : %o", haml, JSON.stringify(haml));
         if(haml) {
           this.last_haml = this.node = $('<div/>').addClass('haml').appendTo(this.node);
           _.each.call(this, haml, function writeHtml(haml) {
@@ -260,11 +259,17 @@ jQuery.fn.litijs = function(src, callback) {
         this.node = $('<pre class="prettyprint"/>').appendTo(this.node);
       },
       leave: function() {
+        this.example = this.node;
         this.node = this.node.parent();
         try {
-          new Function('node', '{' + this.example_code + '}').call(this, $('<div class="nocode"/>').appendTo(this.node));
+          _.local.call(Litijs, { context: this }, 
+            new Function('node',
+              '{' + this.example_code + '\n}'
+            )
+          ).call(this, this.example);
         } catch(ex) {
-          console.log('Failed to eval: %o: %o:%o', this.example_code, ex, ex.stack);
+          console.error('Failed to eval: %o\n%o', 
+            this.example_code, ex.stack);
         }
       }
     },
@@ -317,7 +322,6 @@ jQuery.fn.litijs = function(src, callback) {
       haml.replace(/[^\s]/, function(m,i) { indentation = i; });
       haml = haml.slice(indentation);
       if(indentation < 0) return;
-      console.log("indent: %o, compared to top indent: %o", indentation, top.indentation);
       if(indentation > top.indentation) {
         var haml_node = [haml];
         top.haml.push(haml_node);
@@ -326,7 +330,6 @@ jQuery.fn.litijs = function(src, callback) {
       } else {
         var matched = false;
         while(indentation <= top.indentation) {
-          console.log("unwind: %o, compared to top indent: %o", indentation, top.indentation);
           if(indentation == top.indentation) matched = true;
           top = this.haml_stack.pop();
         }
@@ -342,7 +345,7 @@ jQuery.fn.litijs = function(src, callback) {
         this.node.appendText(line);
         this.node.append($('<br/>'));
       }
-      this.example_code += line;
+      this.example_code += line + "\n";
     },
     'title/title': function(title) {
       var anchor = title.trim().replace(/\s+/g, '_');
@@ -391,7 +394,7 @@ jQuery.fn.litijs = function(src, callback) {
       $('<div class="litijs">')
       .appendTo(
         $('<div class="litijs-container"/>')
-        .appendTo(this)
+        .appendTo(selector)
       ) 
   });
   jQuery.ajax({
@@ -399,54 +402,89 @@ jQuery.fn.litijs = function(src, callback) {
     cache: false,
     success: function(result, status) {
       if(status == 'success') {
-        var parsed = jQuery.fn.litijs.parse(result);
+        var parsed = Litijs.parse(result);
         _.each.call(this, parsed, function(part) {
           emit.send(part.type, part.text);
         });
         emit.send("text", "");
-        //alert(JSON.stringify(emit.self.metadata));
         prettyPrint(); 
         callback && callback();
       }
     }, 
     dataType: 'html'
   });
-};
-
-jQuery.fn.litijs.parse = function(source) {
-  var fn = jQuery.fn.litijs;
-  var result = [];
-  source.replace(/(?:[ \t]*\/\/\/(.*))|(\/\*(?:[^*]|\*[^\/])*\*\/)|((?:[^\/]|\/(?:[^*\/]|\/[^\/]))*(?:[^\/ \t]|\/(?:[^*\/ \t]|\/[^\/ \t]))+)/g, function(match, linecomment, comment, source) {
-    if(!match || !/[^\s]/.test(match)) {
-      return "";
-    } else if(source) {
-      return result.push({type:'source', text: source});
-    } else if(linecomment) {
-      result.push({type:'note', text:linecomment});
-    } else if(comment) {
-      var lines = comment.split("\n");
-      var html = $('<div/>');
-      _.each(lines, function(line) {
-        var header = line.slice(0,2);
-        line = line.slice(2);
-        switch(header) {
-        case '--': 
-          return result.push({type: 'title', text:line});
-        case ' |':
-          if(!/[^\s]/.test(line)) {
-            return result.push({type: 'space', text:line});
-          }
-          return result.push({type: 'text', text:line});
-        case ' >':
-          return result.push({type: 'example', text:line});
-        case ' +':
-          return result.push({type: 'haml', text:line});
+}, {
+  classic: {
+    parse: function(source) {
+      var fn = jQuery.fn.litijs;
+      var result = [];
+      source.replace(/(?:[ \t]*\/\/\/(.*))|(\/\*(?:[^*]|\*[^\/])*\*\/)|((?:[^\/]|\/(?:[^*\/]|\/[^\/]))*(?:[^\/ \t]|\/(?:[^*\/ \t]|\/[^\/ \t]))+)/g, function(match, linecomment, comment, source) {
+        if(!match || !/[^\s]/.test(match)) {
+          return "";
+        } else if(source) {
+          return result.push({type:'source', text: source});
+        } else if(linecomment) {
+          result.push({type:'note', text:linecomment});
+        } else if(comment) {
+          var lines = comment.split("\n");
+          var html = $('<div/>');
+          _.each(lines, function(line) {
+            var header = line.slice(0,2);
+            line = line.slice(2);
+            switch(header) {
+            case '--': 
+              return result.push({type: 'title', text:line});
+            case ' |':
+              if(!/[^\s]/.test(line)) {
+                return result.push({type: 'space', text:line});
+              }
+              return result.push({type: 'text', text:line});
+            case ' >':
+              return result.push({type: 'example', text:line});
+            case ' +':
+              return result.push({type: 'haml', text:line});
+            }
+          });
         }
+        return '';
       });
+      return result;
+    },
+    show_html: function(html) {
+      var text = html.html();
+      text = (function formatXML(xml) {
+        var formatted = '';
+        xml = xml.replace(/(>)/g, '$1\n');
+        xml = xml.replace(/(<)/g, '\n$1');
+        xml = xml.replace(/\n\n/g, '\n');
+        xml = xml.replace(/(<[^\/>]+>)\n([^<]+)\n(<\/)/g, "$1$2$3");
+        xml = xml.replace(/(<[^\/>]+)>\n<\/[^>]+>/g, "$1/>");
+        var pad = 0;
+        _.each(xml.split('\n'), function(node, index) {
+          var indent = 0;
+          if (node.match( /.+<\/\w[^>]*>$/ )) {
+            indent = 0;
+          } else if (node.match( /^<\/\w/ )) {
+            if (pad != 0) {
+              pad -= 1;
+            }
+          } else if (node.match( /^<\w[^>]*[^\/]>.*$/ )) {
+            indent = 1;
+          } else {
+            indent = 0;
+          }
+
+          var padding = new Array(pad+1).join(" ");
+          formatted += padding + node + '\r\n';
+          pad += indent;
+        });
+
+        return formatted.trim();
+      })(text);
+      console.log(text);
+      return $('<pre/>').text(text).addClass('prettyprint lang:html');
     }
-    return '';
-  });
-  return result;
-}
+  }
+});
     
 // vim: set sw=2 ts=2 expandtab :

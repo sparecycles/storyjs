@@ -9,9 +9,11 @@
  | dynamic rendering capabilities of <{http://knockoutjs.com|knockoutjs},
  | and some of the compositing functions of rails layouts.
  |
- | The idea behind template is to specify a functional JSON/Object which controls rendering
+ | The idea behind template is to specify a 
+ | functional JSON/Object which controls rendering
  | and a data JSON which it processes.  Which data is actually accessed is 
- | logged and when data changes the part of the template which accessed it is rerendered.
+ | logged and when data changes the part of the template 
+ | which accessed it is rerendered.
  |
  | Rendering happens in a tree, but this tree is 
  | entirely determined by the call chain which happens when
@@ -19,20 +21,27 @@
  | it and it's children and recursively cleaned and then it rebuilds.
  |
  | Template extends <{http://jquery.com/|jQuery}.fn with two new functions:
- |   template => render the selector with the template engine and data, and
- |   defineTemplate => registers a named template based on the selector and some rendering rules.
+ |   template => render the selector with the template engine and data,
+ |   clearTemplate => unregisters the selector with the template, and
+ |   defineTemplate => registers a named template for reuse.
  |
 -- Examples
  | 
- + %span
  +   %button.template template
  +   %button.clear clear
  +   .example
  +     List
  +     %ol
  +       %li items...
- >! this.last_haml.insertAfter(node);
- >! new function(sample) {
+
+ >! window["ShowIt"] = function(setup) {
+ >!   var context = Litijs.context;
+ >!   setup.call(context, context.last_haml);
+ >!   context.last_haml.insertAfter(context.example);
+ >!   Litijs.show_html(context.last_haml).insertBefore(context.example);
+ >! };
+
+ >! ShowIt(function(sample) {
  >    $('.template', sample).click(function() {
  >      $('.example', sample).template(new MVC({items: [
  >        {text: 'a', color: 'red'}, 
@@ -48,7 +57,7 @@
  >    $('.clear', sample).click(function() {
  >      $('.example', sample).clearTemplate();
  >    });
- >! }(this.last_haml);
+ >! });
  |
 -- Template
  */

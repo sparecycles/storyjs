@@ -1,0 +1,27 @@
+!!!XML
+!!!5
+%html
+  %head
+    %title
+      = yield :title
+    - @inline_javascript = false
+    - (yield :import_javascripts).split(/\s+/).uniq.each do |js|
+      - if @inline_javascript
+        :javascript
+          #{File.new("public/javascripts/#{js.strip}.js").read}
+      - else
+        %script{:src=>"/javascripts/#{js}.js", :type=>'text/javascript'}
+    - (yield :import_stylesheets).split(/\s+/).uniq.each do |css|
+      %link{:href=>"/stylesheets/#{css.strip}.css", |
+            :type=>'text/css',                |
+            :rel=>'stylesheet'}               |
+    = yield :head
+    %style{:type=>'text/css'}
+      = yield :style
+  %body
+    #template{:style=>'display:none'}
+      = yield :template
+    = yield
+  %script{:type=>'text/javascript'}
+    = yield :script
+-# vim: set sw=2 ts=2 expandtab :

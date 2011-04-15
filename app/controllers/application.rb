@@ -13,7 +13,11 @@ class ApplicationController < ActionController::Base
   # from your application log (in this case, all fields with names like "password"). 
   # filter_parameter_logging :password
   def index
-    render :layout => "story"
+    render :layout => "app"
+  end
+
+  def litijs
+    render :layout => "app"
   end
 
   def popup
