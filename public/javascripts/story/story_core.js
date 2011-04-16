@@ -80,10 +80,15 @@
  >!   button.click_and_tell(story, target);
  >! };
  >! Litijs.annotate = function(nodeid, plot) {
- >!   console.error('ANNOTATE %o', arguments);
  >!   return Story.Compound(plot, 
  >!     Story.WithStyle(nodeid, {
- >!       'border': '2px solid green', 
+ >!       'border-left': '3px solid #373',
+ >!       'border-right': '3px solid #373',
+ >!       'border-radius': '10px',
+ >!       'background-color': '#8A8',
+ >!       'padding' : '4px',
+ >!       'margin' : '-7px',
+ >!       'opacity' : '1'
  >!     })
  >!   );
  >! };
@@ -229,9 +234,9 @@
  >   [ 
  >     @(Story.Button('Sequence')@),
  >     [@(Story.Button('Sequence green')@), @(Color('green')@)],
- >     [Story.Button('Sequence red', 
+ >     [@(Story.Button('Sequence red', 
  >       @(Story.Delay(1000)@), @(Color('black')@)
- >     ), @(Color('red')@)]
+ >     )@), @(Color('red')@)]
  >   ]
  >  )
  >! )
