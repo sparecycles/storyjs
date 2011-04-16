@@ -27,7 +27,6 @@ body {
 }
 .litijs .prettyprint{
   width:600px;
-  padding-bottom:10px;
 }
 .litijs pre {
   background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 white;
@@ -70,8 +69,8 @@ h2{
 }
 
 .litijs .wrapper:last-child pre {
-  padding-bottom:10px;
   /* background: red;*/
+padding-bottom:10px;
 }
 button{
     -moz-border-radius: 0.5em 0.5em 0.5em 0.5em;
