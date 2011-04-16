@@ -37,6 +37,7 @@
  >!     clearInterval(interval); 
  >!     interval = setInterval(function() {$(this).change();}.bind(this), 50);
  >!   }).blur(function() { clearInterval(interval); });
+ >!   return this;
  >! };
 -| Examples
  |
@@ -65,10 +66,10 @@
  + .options{"style":"float:right"}
  +   %input{"placeholder":"change me"}
  +   %select
- +     %option black
- +     %option red
- +     %option blue
- +     %option green
+ +     %option{"value":"#000000"} black
+ +     %option{"value":"#FF4D41"} red
+ +     %option{"value":"#91B221"} lime green 
+ +     %option{"value":"#1E8C65"} pine green
  + .example
  +   %ol.each $each : { item : '.items' }
  +     %li '@text' : 'item.text'
@@ -79,9 +80,9 @@
  >! ShowIt(function(sample) {
  >    $('.template', sample).click(function() {
  >      var model = new Template.ViewModel({items: [
- >        {text: 'a', color: 'red'}, 
- >        {text: 'b', color: 'green'}, 
- >        {text: 'c', color: 'blue'}, 
+ >        {text: 'a', color: '#FF4D41'}, 
+ >        {text: 'b', color: '#91B221'}, 
+ >        {text: 'c', color: '#1E8C65'}, 
  >        {text: 'change me', color: 'change me'}
  >      ]});
  >      $('.example', sample).template(model, {
@@ -97,11 +98,11 @@
  >      $('select', sample).change(function() {
  >        model.data('items.3.color', $(this).val()); 
  >      });
- >!     $('select', sample).updatey();
+ >!     $('select', sample).updatey().change();
  >      $('input', sample).change(function() { 
  >        model.data('items.3.text', $(this).val()); 
  >      });
- >!     $('input', sample).updatey();
+ >!     $('input', sample).updatey().change();
  >    });
  >    $('.clear', sample).click(function() {
  >      $('.example', sample).clearTemplate();
