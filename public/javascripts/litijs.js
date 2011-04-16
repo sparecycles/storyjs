@@ -271,9 +271,41 @@ Litijs = _.Class(function(selector, src, callback) {
     example: {
       enter: function() {
         this.example_code = "";
+        this.example_display = "";
+        this.example_nodes = [];
         this.node = $('<pre class="prettyprint"/>').appendTo(this.node);
       },
       leave: function() {
+        var tree = [];
+        _.each.call([], this.example_display.split(/@\(/), function(part) {
+          var chain = part.split(/@\)/);
+          var subtree = [chain[0]];
+          this.push(tree); tree.push(subtree); tree = subtree;
+          _.each.call(this, chain.slice(1), function(part) {
+            tree = this.pop();
+            tree.push(part);
+          });
+        });
+        (function writeTree(tree, root) {
+          this.node = $('<span/>').appendTo(this.node);
+          if(!root) {
+            var id = 'example-span-' + Litijs.example_span_id++;
+            this.example_nodes.push(id);
+            this.node.attr('id', id);
+          }
+          _.each.call(this, tree, function(part) {
+            if(part instanceof Array) writeTree.call(this, part, false);
+            else this.node.appendText(part);
+          });
+          this.node = this.node.parent();
+        }).call(this, tree, true);
+
+        this.example_code = this.example_code.replace(/@\(/g, function() {
+          return 'Litijs.annotate( "#' + this.example_nodes.shift() +  '" , ('
+        }.bind(this)).replace(/@\)/g, 
+          ') )'
+        );
+        
         this.example = this.node;
         this.node = this.node.parent();
         if(this.example.contents().length == 0) {
@@ -364,8 +396,7 @@ Litijs = _.Class(function(selector, src, callback) {
       if(line.slice(0,1) == '!') {
         line = line.slice(1);
       } else {
-        this.node.appendText(line);
-        this.node.append($('<br/>'));
+        this.example_display += line + "\n";
       }
       this.example_code += line + "\n";
     },
@@ -451,6 +482,7 @@ Litijs = _.Class(function(selector, src, callback) {
   });
 }, {
   classic: {
+    example_span_id: 0,
     parse: function(source) {
       var fn = jQuery.fn.litijs;
       var result = [];

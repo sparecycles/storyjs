@@ -30,7 +30,7 @@
  | a Tale is essentially a subtree of the plot structure 
  | made of "plot device" nodes.
  |
- | A device is instantated from a plot node using javascript's
+ | A device is created from a plot node using javascript's
  | prototypal inheritance (betcha this is the first time you've
  | seen a good use of prototyping!).  If you don't know about prototyping
  | check out >{Story.Plot.Device.setup} to see how it's done.
@@ -59,7 +59,7 @@
  |
  | Sequence and Compound are foundational patterns, complementing each other
  | like horizontal and vertical boxes in typesetting, unions and structs in 
- | memory.  They are the time-vs-space tradeoff made useful.
+ | memory.  They are the time-v-space tradeoff made useful.
  |
  | Example:
  |
@@ -78,6 +78,14 @@
  >!   if(!target) target = jQuery('<div/>').addClass('target');
  >!   target.insertAfter(button);
  >!   button.click_and_tell(story, target);
+ >! };
+ >! Litijs.annotate = function(nodeid, plot) {
+ >!   console.error('ANNOTATE %o', arguments);
+ >!   return Story.Compound(plot, 
+ >!     Story.WithStyle(nodeid, {
+ >!       'border': '2px solid green', 
+ >!     })
+ >!   );
  >! };
  >!TryIt(
  > new Story({
@@ -100,8 +108,10 @@
  | a Story.Action, a function will become the update, an object can
  | specify a setup, teardown, update and/or handle as needed.
  |
- | You might like this pattern with saving and restoring css useful, but find specifying 
- | the setup and teardown calls tedious for each one, then by all means, please, >{Story.Plot.Define|define} new Plot node types.
+ | You might like this pattern with saving and 
+ | restoring css useful, but find specifying 
+ | the setup and teardown calls tedious for each one, 
+ | then by all means, please, >{Story.Plot.Define|define} new Plot node types.
  |
  | But make them as general as possible, you won't regret it.
  |
@@ -141,8 +151,8 @@
  | Pretty slick, eh?
  |
  | Another blocking mechanism we can use is a check against a scope variable.
- | A Tale has a scope, which is just a javascript object which can be used to pass 
- | information between plot nodes.
+ | A Tale has a scope, which is just a javascript object 
+ | which can be used to pass information between plot nodes.
  | 
  >!TryIt(
  > new Story({
@@ -172,6 +182,59 @@
  | Hopefully, you won't need to know that specifically,
  | but that's what's preserved when
  | you wrap a callback function with Story.callback.
+ |
+ | Let's see how to make a container node.  The following
+ | defines a button which runs a plot node which it is clicked.
+ | Essentially this is doing what the "Try It" buttons are doing,
+ | but in a composible node form.
+ > Story.Plot.Define("Button", function(text) {
+ >   this.text = text;
+ >   this.plot = Story.Plot.Build(["#Compound"].concat(__args()));
+ > }, {
+ >   setup: function() {
+ >     this.button = jQuery('<button/>')
+ >     .text(this.text)
+ >     .click(Story.callback(function() {
+ >       this.button.attr('disabled', true);
+ >       this.clicked = true;
+ >       this.device = Story.Plot.Device.setup(this.plot);
+ >     })).insertAfter(Story.read('where'));
+ >   },
+ >   teardown: function() {
+ >     if(this.device) Story.Plot.Device.teardown(this.device);
+ >     this.button.remove();
+ >   },
+ >   update: function() {
+ >     return !this.clicked || Story.Plot.Device.update(this.device);
+ >   },
+ >   handle: function(arg) {
+ >     return this.device && Story.Plot.Device.handle(this.device);
+ >   }
+ > });
+ |
+ | This node lets us
+ |
+ 
+ |
+ >
+ > function Color(color) { 
+ >   return Story.WithStyle(function() { 
+ >     return Story.read('target'); 
+ >   }, { 'background-color' : color });
+ > }
+ >! TryIt(
+ >  new Story(
+ >   @(Story.Button('Compound X')@),
+ >   @(Story.Button('Compound Y')@),
+ >   [ 
+ >     @(Story.Button('Sequence')@),
+ >     [@(Story.Button('Sequence green')@), @(Color('green')@)],
+ >     [Story.Button('Sequence red', 
+ >       @(Story.Delay(1000)@), @(Color('black')@)
+ >     ), @(Color('red')@)]
+ >   ]
+ >  )
+ >! )
  |
 -| Story
  | @{Story|}

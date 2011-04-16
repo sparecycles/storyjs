@@ -158,7 +158,7 @@ Story.Plot.Define('Compound', function() {
     });
   },
   teardown: function() {
-    _.each(this.devices.slice().reverse(), function(device) {
+    _.each(this.devices, function(device) {
       Story.Plot.Device.teardown(device);
     });
   },
@@ -280,18 +280,18 @@ Story.Plot.Define('Delay', function(ms) {
 Story.Plot.Define('Live', function(interval) {
   arguments;
   this.interval = interval;
-  this.device = Story.Plot.Register(this, Story.Plot.Build(__args()));
+  this.plot = Story.Plot.Register(this, Story.Plot.Build(__args()));
 }, {
   setup: function() {
-    this.handle = setInterval(Story.callback(Story.update), this.interval);
-    this.content = Story.Plot.Device.setup(this.device);
+    this.interval = setInterval(Story.callback(Story.update), this.interval);
+    this.device = Story.Plot.Device.setup(this.plot);
   },
   update: function() {
-    return Story.Plot.Device.update(this.content);
+    return Story.Plot.Device.update(this.device);
   },
   teardown: function() {
-    Story.Plot.Device.teardown(this.content);
-    clearInterval(this.handle);
+    Story.Plot.Device.teardown(this.device);
+    clearInterval(this.interval);
   }
 });
 
