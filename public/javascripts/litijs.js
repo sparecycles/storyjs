@@ -374,7 +374,11 @@ Litijs = _.Class(function(selector, src, callback) {
       this.node.append($('<a/>').attr('name', anchor).attr('id', 'litijs.' + anchor));
       this.node.appendText(title);
     },
-    'subtitle/subtitle': function(title) {
+    'subtitle/subtitle': function(title, options) {
+      if(!options.hidden || /@/.test(title)) {
+        var anchor = title.trim().replace(/\s+/g, '_');
+        this.node.append($('<a/>').attr('name', anchor).attr('id', 'litijs.' + anchor));
+      }
       this.process(title);
     }
   }, { 
@@ -436,7 +440,7 @@ Litijs = _.Class(function(selector, src, callback) {
       if(status == 'success') {
         var parsed = Litijs.parse(result);
         _.each.call(this, parsed, function(part) {
-          emit.send(part.type, part.text);
+          emit.send(part.type, part.text, part);
         });
         emit.send("text", "");
         prettyPrint(); 
@@ -468,6 +472,8 @@ Litijs = _.Class(function(selector, src, callback) {
               return result.push({type: 'title', text:line});
             case '-|': 
               return result.push({type: 'subtitle', text:line});
+            case '-!': 
+              return result.push({type: 'subtitle', text:line, hidden: true});
             case ' |':
               if(!/[^\s]/.test(line)) {
                 return result.push({type: 'space', text:line});

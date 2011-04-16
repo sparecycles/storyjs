@@ -39,7 +39,9 @@
  >!   }).blur(function() { clearInterval(interval); });
  >!   return this;
  >! };
--| Examples
+-- Examples
+ |
+-| Replacement
  |
  | Like any decent templating engine, we should be able to do
  | replacements.
@@ -77,6 +79,9 @@
  +     %li '@text' : '.text'
  | ... can be rendered by binding template and clearTemplate to
  | the buttons.
+ |
+-| Simple Iteration
+ |
  >! ShowIt(function(sample) {
  >    $('.template', sample).click(function() {
  >      var model = new Template.ViewModel({items: [
@@ -109,16 +114,17 @@
  >    });
  >! });
  | The difference being that $each introduces a scope
- | variable, while $for adjusts the root data context.
- |
- | The results are the same.
+ | variable, while $for adjusts the root data context,
+ | but the results are exactly the same.
  >! ShowIt.last.appendTo(this.node);
+ |
+-| 
  |
 -- API
  | 
--| @{Template.access:doc|Template.access}
+-! @{Template.access:doc|Template.access}
  |
--- Template
+-! Template
  */
 /// Template creates a node in the tree of renders.
 Template = _.Class(function(self, action) {
