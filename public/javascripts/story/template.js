@@ -31,6 +31,13 @@
  >!   setup.call(context, context.haml);
  >!   ShowIt.last = context.haml.insertAfter(context.example);
  >! };
+ >! jQuery.fn.updatey = function() {
+ >!   var interval;
+ >!   this.focus(function() {
+ >!     clearInterval(interval); 
+ >!     interval = setInterval(function() {$(this).change();}.bind(this), 50);
+ >!   }).blur(function() { clearInterval(interval); });
+ >! };
 -| Examples
  |
  | Like any decent templating engine, we should be able to do
@@ -45,19 +52,23 @@
  >  $('.templated', sample).template(model, {
  >    '.' : '.result'
  >  });
- >  var interval;
- >  $('input', sample).change(function() { 
+ >  $('input', sample).change(function() {
  >    model.data('result', $(this).val()); 
- >  }).focus(function() {
- >    clearInterval(interval); 
- >    interval = setInterval(function() {$(this).change();}.bind(this), 50);
- >  }).blur(function() { clearInterval(interval); });
+ >  });
+ >! $('input', sample).updatey();
  >!});
- >! ShowIt.last.appendTo(this.node);
+ >!ShowIt.last.appendTo(this.node);
  |
  | We can do iterations using $each and $for
  + %button.template template
  + %button.clear clear
+ + .options{"style":"float:right"}
+ +   %input{"placeholder":"change me"}
+ +   %select
+ +     %option black
+ +     %option red
+ +     %option blue
+ +     %option green
  + .example
  +   %ol.each $each : { item : '.items' }
  +     %li '@text' : 'item.text'
@@ -67,11 +78,13 @@
  | the buttons.
  >! ShowIt(function(sample) {
  >    $('.template', sample).click(function() {
- >      $('.example', sample).template(new Template.ViewModel({items: [
+ >      var model = new Template.ViewModel({items: [
  >        {text: 'a', color: 'red'}, 
  >        {text: 'b', color: 'green'}, 
  >        {text: 'c', color: 'blue'}, 
- >      ]}), {
+ >        {text: 'change me', color: 'change me'}
+ >      ]});
+ >      $('.example', sample).template(model, {
  >        '.each>li' : { $each : { item: '.items' },
  >          '@style' : { color: 'item.color' },
  >          '@text' : 'item.text'
@@ -81,6 +94,14 @@
  >          '@style' : { color: '.color' }
  >        }
  >      });
+ >      $('select', sample).change(function() {
+ >        model.data('items.3.color', $(this).val()); 
+ >      });
+ >!     $('select', sample).updatey();
+ >      $('input', sample).change(function() { 
+ >        model.data('items.3.text', $(this).val()); 
+ >      });
+ >!     $('input', sample).updatey();
  >    });
  >    $('.clear', sample).click(function() {
  >      $('.example', sample).clearTemplate();
@@ -91,7 +112,6 @@
  |
  | The results are the same.
  >! ShowIt.last.appendTo(this.node);
- |
  |
 -- API
  | 
