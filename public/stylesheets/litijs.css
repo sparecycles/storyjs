@@ -155,14 +155,17 @@ button:active {
 }
 
 .litijs .target {
-	border-radius:40px;
-	width:40px;
-	height:40px;
-	background-color:blue;
-	display:inline-block;
+  border-radius: 40px;
+  width: 40px;
+  height: 40px;
+  background-color: blue;
+  display: inline-block;
+  margin-bottom: -12px;
+  margin-top: 10px;
+  margin-left: 10px;
 }
 
 .litijs button:disabled {
 	background:lightgray;
-    border:#ddd;
+    border:1px solid #ddd;
 }

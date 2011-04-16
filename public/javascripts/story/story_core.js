@@ -173,7 +173,7 @@
  | but that's what's preserved when
  | you wrap a callback function with Story.callback.
  |
--- Story
+-| Story
  | @{Story|}
  */
  
@@ -264,7 +264,7 @@ Story = _.Class(function() {
       } else throw new Error("Story.access: No scope named " + scope);
     },
 /*
--- Story.Plot
+-| Story.Plot
  | Plot is responsible for definition of nodes and story construction.
  | It is also the root class of all story nodes.
  */
@@ -394,7 +394,7 @@ Story = _.Class(function() {
           return plot;
         },
 /*
--- Story.Plot.Device
+-| Story.Plot.Device
  |
  | 
  */
@@ -431,7 +431,7 @@ Story = _.Class(function() {
       }
     }),
 /*
--- Story.Tale
+-| Story.Tale
  | Story.Tale is responsible for running stories.
  |
  | A tale can be >{Story.Tale.update|updated}, sent events through >{Story.Tale.handle|handle} and
@@ -478,7 +478,7 @@ Story = _.Class(function() {
       },
       classic: {
 /*
--- Story.Tale.Context
+-| Story.Tale.Context
  | @{Story.Tale.Context} maintains the active 
  | tale and the active plot device.
  | An instance of it is set in Story.Tale.context 
