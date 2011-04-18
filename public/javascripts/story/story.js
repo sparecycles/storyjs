@@ -158,7 +158,7 @@ Story.Plot.Define('Compound', function() {
     });
   },
   teardown: function() {
-    _.each(this.devices, function(device) {
+    _.each(this.devices.slice().reverse(), function(device) {
       Story.Plot.Device.teardown(device);
     });
   },

@@ -276,34 +276,59 @@ Litijs = _.Class(function(selector, src, callback) {
         this.node = $('<pre class="prettyprint"/>').appendTo(this.node);
       },
       leave: function() {
-        var tree = [];
-        _.each.call([], this.example_display.split(/@\(/), function(part) {
-          var chain = part.split(/@\)/);
-          var subtree = [chain[0]];
-          this.push(tree); tree.push(subtree); tree = subtree;
-          _.each.call(this, chain.slice(1), function(part) {
-            tree = this.pop();
-            tree.push(part);
-          });
-        });
+        function tree_parse(text, options) {
+          var matches = 0;
+          text.replace(new RegExp(options.left_split.source, 'g'), 
+            function(match, arg) {
+              // match, matches..., index, source
+              matches = arguments.length - 3; 
+            }
+          );
+          var split = text.split(options.left_split);
+          var stack = [];
+          var tree = ['(root)', split[0]];
+          split = split.slice(1);
+          while(split.length) {
+            var subtree = split.slice(0, matches);
+            split = split.slice(matches);
+            var part = split[0];
+            split = split.slice(1);
+            var chain = part.split(options.right_split);
+            subtree.push(chain[0]);
+            stack.push(tree); tree.push(subtree); tree = subtree;
+            _.each(chain.slice(1), function(part) {
+              tree = stack.pop();
+              tree.push(part);
+            });
+          };
+          return tree;
+        }
+        var parse_options = {
+          left_split: /@([a-zA-Z]?)\(/,
+          right_split: /@\)/
+        };
+        var tree = tree_parse(this.example_display, parse_options);
         (function writeTree(tree, root) {
           this.node = $('<span/>').appendTo(this.node);
           if(!root) {
             var id = 'example-span-' + Litijs.example_span_id++;
-            this.example_nodes.push(id);
+            this.example_nodes.push({id: id, type: tree[0]});
             this.node.attr('id', id);
           }
-          _.each.call(this, tree, function(part) {
+          _.each.call(this, tree.slice(1), function(part) {
             if(part instanceof Array) writeTree.call(this, part, false);
             else this.node.appendText(part);
           });
           this.node = this.node.parent();
         }).call(this, tree, true);
 
-        this.example_code = this.example_code.replace(/@\(/g, function() {
-          return 'Litijs.annotate( "#' + this.example_nodes.shift() +  '" , ('
-        }.bind(this)).replace(/@\)/g, 
-          ') )'
+        this.example_code = this.example_code.replace(
+            new RegExp(parse_options.left_split.source, 'g'), function() {
+          var exnode = this.example_nodes.shift();
+          return 'Litijs.annotate( "#' + exnode.id +  '" , ' 
+            + JSON.stringify(exnode.type) + ', (function() { return ('
+        }.bind(this)).replace(new RegExp(parse_options.right_split.source, 'g'), 
+           '); })).call(this)'
         );
         
         this.example = this.node;
@@ -313,6 +338,7 @@ Litijs = _.Class(function(selector, src, callback) {
           delete this.example;
         }
         try {
+          console.log(this.example_code); debugger;
           _.local.call(Litijs, { context: this }, 
             new Function('node',
               '{' + this.example_code + '\n}'
@@ -431,8 +457,15 @@ Litijs = _.Class(function(selector, src, callback) {
         return '';
       }.bind(this));
       if(dtdd) return;
-      line.replace(/([@<>]){([^}|]*)(\|[^}]*)?}/g, function(match, type, anchor, text, index) {
-        links.push({index:index, match: match, anchor: anchor, text: text ? text.slice(1) : anchor, type: type });
+      var link_regex = /([@<>]){([^}|]*)(\|[^}]*)?}/g;
+      line.replace(link_regex, function(match, type, anchor, text, index) {
+        links.push({
+          index:index, 
+          match: match,
+          anchor: anchor,
+          text: text ? text.slice(1) : anchor,
+          type: type
+        });
         return match;
       });
       if(links.length == 0) {
@@ -449,11 +482,17 @@ Litijs = _.Class(function(selector, src, callback) {
             link.type == '>' ? '#' + link.anchor : link.anchor
           ).appendTo(this.node);
           if(link.type == "@") a.attr('id', 'litijs.' + link.anchor);
+          var to_append;
           if(index < links.length-1) {
-            this.node.appendText(line.slice(link.index + link.match.length, links[index+1].index));
+            to_append = line.slice(
+              link.index + link.match.length, 
+              links[index+1].index
+            );
           } else {
-            this.node.appendText(line.slice(link.index + link.match.length));
+            to_append = line.slice(link.index + link.match.length);
           }
+          
+          this.node.appendText(to_append);
         });
       }
     },

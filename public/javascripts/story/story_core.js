@@ -5,61 +5,91 @@
  |
 -- Introduction
  |
- | >{Story} is a framework for scripting behaviour over time.
+-| >{Story} is a framework for scripting behaviour over time.
  | 
  | Most programming languages lack the ability to keep track of
  | actions over time, story provides patterns for dealing with 
- | asynchronous tasks, user input, dialog flow, and other multi-stage
+ | multi-stage tasks, like ajax handling, user input, and dialog flow:
  | problems which can't be addressed in one run of code.
  |
- | A particular Story is made of a tree of plot nodes.
+ | Story can address these kinds of tasks with modular,
+ | composable nodes.  The main advantage being that a story
+ | can represent something complicated like a UI flow 
+ | with AJAX request response handling compactly, with no
+ | need to trace through callback spaghetti.
+ |
+ | The original Story engine was written in the C language 
+ | at the now defunct Santa Cruz Games for scripting 
+ | tutorials.  The paradigm lends itself naturally 
+ | to other uses and other languages.  
+ 
+-- Overview
+ |
+ | The original concept of story is a representation 
+ | of sequenced things that
+ | need to be done one after another, and compounded things that 
+ | happen together.
+ | The first requirement lead to the concept of a node which needs to
+ | be able to indicate completion.  Sequences and compounds can both
+ | be nodes and so they are.
+ |
+ | A node indicates completion by returning false from its 
+ | >{Story.Plot.update|update} method.  Note that a node may be updated
+ | after it indicates completion or be ended prematurely, depending
+ | on the structure. Also, completion isn't necessarily sticky, 
+ | for instance a form validation node might go back and forth on its
+ | status.
+ | 
+ | A Story holds a single plot node, the root of the plot tree.
  | Generally, internal nodes are container nodes which control execution, 
  | while the leaves of the tree are action nodes which perform tasks.
+ | But exceptions are not uncommon, a dialog node might
+ | have a few buttons, each button might hold a branch of the story,
+ | but the dialog itself does something.
  |
--- Overview
- | Construction of the plot node tree is the job of >{Story.Plot}.
- | All plot nodes inherit from Story.Plot, and it has class 
- | methods for converting and registering the nodes in the 
- | structure.
+ | The internal API for construction of the plot node tree 
+ | is the job of >{Story.Plot}, which, by the way, is the base class for
+ | all plot nodes.
  |
- | A Story must be >{Story.tell|told} to function. 
+ | The plot in a story is a rigid, declarative structure,
+ | So we must >{Story.tell|tell} a Story to use it.
  | A >{Story.Tale} represents an active story. Any number of tales can 
- | be created from a single story, and operate independently.
- |
- | A Plot structure is rigid and unchanging once built.
- | a Tale is essentially a subtree of the plot structure 
- | made of "plot device" nodes.
- |
- | A device is created from a plot node using javascript's
- | prototypal inheritance (betcha this is the first time you've
- | seen a good use of prototyping!).  If you don't know about prototyping
+ | be created from a story, and each operate independently.
+ | When a story is told, plot >{Story.Plot.Device|devices} are created
+ | using javascript's prototypal inheritance from the plot node,
+ | (betcha this is the first time you've
+ | seen a non-trivial use of prototyping!).
+ | If you don't know about prototyping
  | check out >{Story.Plot.Device.setup} to see how it's done.
+ |
  | By the way, when implementing your own plot container nodes, 
  | >{Story.Plot.Device} has the API functions that manage
  | devices.
  |
+ | Javascript lacks constructors and destructors, but Story does not.
+ | A plot device's lifetime spans the time it is >{Story.Plot.setup}
+ | to the time it runs >{Story.Plot.teardown}.  
+ |
 -- API/Interface
  | Each story plot node must handle a few basic functions
- |   setup       => constructor inside a tale 
- |   update      => update inside a tale, return a truthy expression if the node is not "done".
- |   teardown    => destructor inside a tale
- |   handle(arg) => process events sent to the tale (this hasn't been used yet!)
+ |   setup       => constructor
+ |   update      => update, returns false to indicate completion
+ |   teardown    => destructor
+ |   handle(arg) => process events sent to the tale (not used yet!)
  |
  | Let's illustrate with the two basic collection plot nodes: 
- |   <{?story#Story.Sequence|Story.Sequence} and Story.Compound.
+ |   <{?story#Story.Sequence|Story.Sequence} and 
+ |   <{?story#Story.Compound|Story.Compound}.
  |
  | A Sequence node acts as each of its children in turn, setting up and
  | tearing down each one.
- | A sequeunce which has run off then end of its children is "done".
+ | A sequeunce is complete when it is no longer updating any children.
  |
  | A Compound acts as all of its children, all their setups and
- | teardowns are done with the compound, and when all of them are
- | "done" then the compound is too.  A common pairing for compounds
- | is one node to display, and another to @{Story.Delay}.
- |
- | Sequence and Compound are foundational patterns, complementing each other
- | like horizontal and vertical boxes in typesetting, unions and structs in 
- | memory.  They are the time-v-space tradeoff made useful.
+ | teardowns are done together, and the compound is complete when all
+ | the children are complete.  One common pairing for compounds
+ | is one node to display, while another performs some sort of 
+ | asynchronous task (like AJAX, or <{?story#Story.Delay|Delay}).
  |
  | Example:
  |
@@ -71,6 +101,27 @@
  >!     $(this).attr('disabled', true);
  >!   });
  >! };
+ >! Story.Plot.Define('WithStyle', function(selector, style) {
+ >!   this.selector = selector;
+ >!   this.style = style;
+ >! }, {
+ >!   setup: function() {
+ >!     this.selector = typeof this.selector === 'function' 
+ >!       ? this.selector() 
+ >!       : jQuery(this.selector);
+ >!     this.restore = _.map(this.selector, function(elem) { 
+ >!       return elem.getAttribute('style');
+ >!     });
+ >!     _.each.call(this, this.selector, function(elem) {
+ >!       jQuery(elem).css(this.style);
+ >!     });
+ >!   },
+ >!   teardown: function() {
+ >!     _.each.call(this, this.selector, function(elem, index) {
+ >!       elem.setAttribute('style', this.restore[index]);
+ >!     });
+ >!   }
+ >! });
  >! window['TryIt'] = function(story, title, target) {
  >!   var button = jQuery('<button/>')
  >!     .appendTo(Litijs.context.node)
@@ -79,9 +130,28 @@
  >!   target.insertAfter(button);
  >!   button.click_and_tell(story, target);
  >! };
- >! Litijs.annotate = function(nodeid, plot) {
- >!   return Story.Compound(plot, 
- >!     Story.WithStyle(nodeid, {
+ >! Litijs.annotate = function(nodeid, type, thing) {
+ >!   switch(type) {
+ >!   case 'e': 
+ >!     return function() {
+ >!       new Story([[Story.Delay(0), Story.WithStyle(nodeid, {
+ >!         'border-radius': '10px',
+ >!         'background-color': '#A88',
+ >!         'padding' : '4px',
+ >!         'margin' : '-4px',
+ >!         'opacity' : '1'
+ >!       })],[Story.Delay(1000), Story.WithStyle(nodeid, {
+ >!         'webkit-transition-duration' : '1s',
+ >!         'border-radius': '10px',
+ >!         'padding' : '10px',
+ >!         'margin' : '-10px',
+ >!         'background-color': 'none',
+ >!         'webkit-transition-property' : 'all'
+ >!       })]]).tell();
+ >!       return thing.call(this);
+ >!     };
+ >!   default:
+ >!     return function() { return Story.Compound(thing.call(this), Story.WithStyle(nodeid, {
  >!       'border-left': '3px solid #373',
  >!       'border-right': '3px solid #373',
  >!       'border-radius': '10px',
@@ -89,19 +159,19 @@
  >!       'padding' : '4px',
  >!       'margin' : '-7px',
  >!       'opacity' : '1'
- >!     })
- >!   );
+ >!     })); };
+ >!   }
  >! };
  >!TryIt(
  > new Story({
  >   setup: function() { 
- >     this.style = Story.read('target')[0].getAttribute('style') || '';
- >     Story.read('target').css('background-color', 'red');
+ >     @e(this.style = Story.read('target')[0].getAttribute('style') || ''@);
+ >     @e(Story.read('target').css('background-color', 'red')@);
  >   },
  >   teardown: function() {
- >     Story.read('target')[0].setAttribute('style', this.style);
+ >     @e(Story.read('target')[0].setAttribute('style', this.style)@);
  >   }
- > }, Story.Delay(1000))
+ > }, @(Story.Delay(1000)@))
  >!);
  |
  | Here we defined a custom action as just an object with setup and teardown calls,
@@ -120,6 +190,7 @@
  |
  | But make them as general as possible, you won't regret it.
  |
+ >! delete Story.WithStyle
  > Story.Plot.Define('WithStyle', function(selector, style) {
  >   this.selector = selector;
  >   this.style = style;
