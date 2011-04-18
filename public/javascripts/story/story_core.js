@@ -101,7 +101,7 @@
  >!     $(this).attr('disabled', true);
  >!   });
  >! };
- >! Story.Plot.Define('WithStyle', function(selector, style) {
+ >! Story.Plot.Define('WithStyle_', function(selector, style) {
  >!   this.selector = selector;
  >!   this.style = style;
  >! }, {
@@ -133,25 +133,29 @@
  >! Litijs.annotate = function(nodeid, type, thing) {
  >!   switch(type) {
  >!   case 'e': 
+ >!      var animation = new Story([[Story.Delay(10), Story.WithStyle_(nodeid, {
+ >!       'border-radius': '10px',
+ >!       'background-color': '#A88',
+ >!       'padding' : '4px',
+ >!       'margin' : '-4px',
+ >!       'opacity' : '1',
+ >!       'webkit-transition-duration' : '0'
+ >!     })],[Story.Delay(1000), Story.WithStyle_(nodeid, {
+ >!       'webkit-transition-duration' : '1s',
+ >!       'border-radius': '10px',
+ >!       'padding' : '10px',
+ >!       'margin' : '-10px',
+ >!       'background-color': 'none',
+ >!       'webkit-transition-property' : 'all'
+ >!     })]]);
+ >!     var running;
  >!     return function() {
- >!       new Story([[Story.Delay(0), Story.WithStyle(nodeid, {
- >!         'border-radius': '10px',
- >!         'background-color': '#A88',
- >!         'padding' : '4px',
- >!         'margin' : '-4px',
- >!         'opacity' : '1'
- >!       })],[Story.Delay(1000), Story.WithStyle(nodeid, {
- >!         'webkit-transition-duration' : '1s',
- >!         'border-radius': '10px',
- >!         'padding' : '10px',
- >!         'margin' : '-10px',
- >!         'background-color': 'none',
- >!         'webkit-transition-property' : 'all'
- >!       })]]).tell();
+ >!       if(running) running.stop();
+ >!       running = animation.tell();
  >!       return thing.call(this);
  >!     };
  >!   default:
- >!     return function() { return Story.Compound(thing.call(this), Story.WithStyle(nodeid, {
+ >!     return function() { return Story.Compound(thing.call(this), Story.WithStyle_(nodeid, {
  >!       'border-left': '3px solid #373',
  >!       'border-right': '3px solid #373',
  >!       'border-radius': '10px',
@@ -190,7 +194,6 @@
  |
  | But make them as general as possible, you won't regret it.
  |
- >! delete Story.WithStyle
  > Story.Plot.Define('WithStyle', function(selector, style) {
  >   this.selector = selector;
  >   this.style = style;
@@ -217,10 +220,10 @@
  |
  >!TryIt(
  > new Story(
- >   Story.WithStyle(function() { 
+ >   @(Story.WithStyle(function() { 
  >     return Story.read('target'); 
- >   }, { 'background-color': '#8B00FF' }),
- >   Story.Delay(3000)
+ >   }, { 'background-color': '#8B00FF' })@),
+ >   @(Story.Delay(3000)@)
  > )
  >!);
  |
@@ -233,15 +236,15 @@
  >!TryIt(
  > new Story({
  >   setup: function() {
- >     this.button = jQuery('<button/>').click(Story.callback(function() {
- >       Story.write('done', true);
- >     })).text('End Test!').insertAfter(this.scope.where);
+ >     @e(this.button = jQuery('<button/>').click(Story.callback(function() {
+ >       @e(Story.write('done', true)@);
+ >     })).text('End Test!').insertAfter(this.scope.where)@);
  >   }, 
- >   teardown: function() { this.button.remove(); }
- > }, Story.WithStyle(function() { return Story.read('target'); }, { 
+ >   teardown: function() { @e(this.button.remove()@); }
+ > }, @(Story.WithStyle(function() { return Story.read('target'); }, { 
  >   'background-color': '#8B00FF' 
- > }), function() {
- >   return !Story.read('done');
+ > })@), function() {
+ >   return @e(!Story.read('done')@);
  > })
  >!);
  |

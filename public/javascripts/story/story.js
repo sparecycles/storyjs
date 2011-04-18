@@ -59,6 +59,11 @@ Story.Plot.Define('Sequence', function() {
 }, {
   /// @{Story.Sequence.setup|setup} selects the first child.
   setup: function() {
+    console.log('select(0)');
+    for(var node = this; node; node = node.parent) {
+      console.log('\t' + node.type);
+    }
+    console.log('select(0)');
     this.select(0);
   },
   /// @{Story.Sequence.teardown|teardown} tearsdown the
@@ -258,10 +263,8 @@ Story.Plot.Define('Delay', function(ms) {
   this.delay = ms;
 }, {
   setup: function() {
-    var self = this;
     this.timeout = setTimeout(Story.callback(function() {
-      self.done = true; 
-      Story.update(); 
+      this.done = true; 
     }), this.delay);
   },
   teardown: function() {

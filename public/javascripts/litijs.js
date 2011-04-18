@@ -338,7 +338,6 @@ Litijs = _.Class(function(selector, src, callback) {
           delete this.example;
         }
         try {
-          console.log(this.example_code); debugger;
           _.local.call(Litijs, { context: this }, 
             new Function('node',
               '{' + this.example_code + '\n}'
