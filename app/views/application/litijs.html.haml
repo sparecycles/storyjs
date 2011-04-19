@@ -9,10 +9,10 @@
     var file = ({
       litijs: 'javascripts/litijs.js',
       template: 'javascripts/story/template.js',
+      plot: 'javascripts/story/plot.js',
       story: 'javascripts/story/story.js',
-      core: 'javascripts/story/story_core.js',
       layer: 'javascripts/story/layer.js',
-    })[window.location.search.slice(1)] || 'javascripts/story/story_core.js';
+    })[window.location.search.slice(1)] || 'javascripts/story/story.js';
     
     Litijs($('body'), file, function() {
       if(window.location.hash) {
