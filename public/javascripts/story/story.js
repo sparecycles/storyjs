@@ -710,11 +710,6 @@ Story.Plot.Define('Sequence', function() {
 }, {
   /// @{Story.Sequence.setup|setup} selects the first child.
   setup: function() {
-    console.log('select(0)');
-    for(var node = this; node; node = node.parent) {
-      console.log('\t' + node.type);
-    }
-    console.log('select(0)');
     this.select(0);
   },
   /// @{Story.Sequence.teardown|teardown} tearsdown the

@@ -39,6 +39,63 @@
  >!   }).blur(function() { clearInterval(interval); });
  >!   return this;
  >! };
+ >! Story.Plot.Define('WithStyle_', function(selector, style) {
+ >!   this.selector = selector;
+ >!   this.style = style;
+ >! }, {
+ >!   setup: function() {
+ >!     this.selector = typeof this.selector === 'function' 
+ >!       ? this.selector() 
+ >!       : jQuery(this.selector);
+ >!     this.restore = _.map(this.selector, function(elem) { 
+ >!       return elem.getAttribute('style');
+ >!     });
+ >!     _.each.call(this, this.selector, function(elem) {
+ >!       jQuery(elem).css(this.style);
+ >!     });
+ >!   },
+ >!   teardown: function() {
+ >!     _.each.call(this, this.selector, function(elem, index) {
+ >!       elem.setAttribute('style', this.restore[index]);
+ >!     });
+ >!   }
+ >! });
+ >! Litijs.annotate = function(nodeid, type, thing) {
+ >!   switch(type) {
+ >!   case 'e': 
+ >!      var animation = new Story([[Story.Delay(10), Story.WithStyle_(nodeid, {
+ >!       'border-radius': '10px',
+ >!       'background-color': '#A88',
+ >!       'padding' : '4px',
+ >!       'margin' : '-4px',
+ >!       'opacity' : '1',
+ >!       'webkit-transition-duration' : '0'
+ >!     })],[Story.Delay(1000), Story.WithStyle_(nodeid, {
+ >!       'webkit-transition-duration' : '1s',
+ >!       'border-radius': '10px',
+ >!       'padding' : '10px',
+ >!       'margin' : '-10px',
+ >!       'background-color': 'none',
+ >!       'webkit-transition-property' : 'all'
+ >!     })]]);
+ >!     var running;
+ >!     return function() {
+ >!       if(running) running.stop();
+ >!       running = animation.tell();
+ >!       return thing.call(this);
+ >!     };
+ >!   default:
+ >!     return function() { return Story.Compound(thing.call(this), Story.WithStyle_(nodeid, {
+ >!       'border-left': '3px solid #373',
+ >!       'border-right': '3px solid #373',
+ >!       'border-radius': '10px',
+ >!       'background-color': '#8A8',
+ >!       'padding' : '4px',
+ >!       'margin' : '-7px',
+ >!       'opacity' : '1'
+ >!     })); };
+ >!   }
+ >! };
 -- Examples
  |
 -| Replacement
@@ -49,15 +106,19 @@
  +   %input{"placeholder":"change me"}
  +   result:
  +   %span.templated
- |
+ | can be controlled using this template
  >!ShowIt(function(sample) {
- >  var model = new Template.ViewModel({result: 'change me'});
- >  $('.templated', sample).template(model, {
- >    '.' : '.result'
- >  });
- >  $('input', sample).change(function() {
- >    model.data('result', $(this).val()); 
- >  });
+ >var model = new Template.ViewModel({result: 'change me'});
+ >
+ >// template the root element with '.result'
+ >$('.templated', sample).template(model, {
+ >  '.' : '.result'
+ >});
+ >
+ >// write the model data on change of the input.
+ >$('input', sample).change(function() {
+ >  model.data('result', $(this).val()); 
+ >});
  >! $('input', sample).updatey();
  >!});
  >!ShowIt.last.appendTo(this.node);
@@ -118,7 +179,91 @@
  | but the results are exactly the same.
  >! ShowIt.last.appendTo(this.node);
  |
--| 
+-| Data, Template.access, and $let
+ |
+ | The template system tracks data access as it
+ | renders.  For this, data must be accessed through
+ | >{Template.access}.  In most cases, the rendering rules
+ | will just specify the string which will be run through
+ | Template.access.  Template.access can be used to get both 
+ | source data, and data computed in a $let or $each binding.
+ |
+ + %center.example
+ +   show a month with
+ +   %select.days
+ +     %option
+ +   days, which starts on
+ +   %select.first-day
+ +     %option
+ +   %table
+ +     %tr
+ +       %th Sun
+ +       %th Mon
+ +       %th Tue
+ +       %th Wed
+ +       %th Thu
+ +       %th Fri
+ +       %th Sat
+ +     %tr.row
+ +       %td.day
+ | and now we want to render a grid for the month.
+ | we can do this in a $let binding, computing the data
+ | from the source, and it still automatically updates.
+ | Template doesn't care who accesses data, it just mattered that
+ | it was accessed while rendering that node.
+ >! ShowIt(function(sample) {
+ >var model = new Template.ViewModel({
+ >  number_of_days_options: [ 30, 31, 28, 29 ],
+ >  first_day_options: [ 
+ >    { name: 'Sunday',    value: 0 },
+ >    { name: 'Monday',    value: 1 },
+ >    { name: 'Tuesday',   value: 2 },
+ >    { name: 'Wednesday', value: 3 },
+ >    { name: 'Thursday',  value: 4 },
+ >    { name: 'Friday',    value: 5 },
+ >    { name: 'Saturday',  value: 6 },
+ >  ],
+ >  first_day: 0,
+ >  number_of_days: 30
+ >});
+ >sample.template(model, {
+ >  '.first-day' : {
+ >    'option' : { $each: { day: '.first_day_options' },
+ >      '@value': 'day.value',
+ >      '@text': 'day.name',
+ >    },
+ >    '@onchange': function() { 
+ >      @e(Template.update('.first_day', $(this).val())@); 
+ >    }
+ >  },
+ >  '.days': {
+ >    'option' : { $each: { day: '.number_of_days_options' },
+ >      '@text': 'day',
+ >    },
+ >    '@onchange': function() {
+ >      @e(Template.update('.number_of_days', $(this).val())@);
+ >    }
+ >  },
+ >  'table' : {
+ >    $let : { rows : function() {
+ >      var row = [], rows = [], cell = 0, 
+ >          day = 1, 
+ >          first_day = Template.access('.first_day')
+ >          days = Template.access('.number_of_days');
+ >      rows.push(row);
+ >      while(row.length < first_day) row.push(''); 
+ >      while(day <= days) {
+ >        if(row.length == 7) { row = []; rows.push(row); }
+ >        row.push(day++);
+ >      }
+ >      return rows; //Template.ViewModel.constant(rows);
+ >    } },
+ >    '.row' : { $each : { row: 'rows' },
+ >      '.day' : { $each : { day: 'row' }, '.' : 'day' }
+ >    }
+ >  }
+ >});
+ >! })
  |
 -- API
  | 
@@ -504,7 +649,15 @@ Template = _.Class(function(self, action) {
             _.each.call(this, $let, evaluate_let_bindings);
           } else {
             _.each.call(this, $let, function(value, key) {
-              return Template.scope(_.build(key, [Template.navigate(value)]));
+              if(typeof value === 'function') {
+                return Template.scope(_.build(key, [
+                  Template.ViewModel.constant(Template.access(value))
+                ]));
+              } else {
+                return Template.scope(_.build(key, [
+                  Template.navigate(value)
+                ]));
+              }
             });
           }
         }).call(this, $let);

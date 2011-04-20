@@ -215,7 +215,7 @@ Litijs = _.Class(function(selector, src, callback) {
       leave: function() {
         var haml;
         while(this.haml_stack.length) haml = this.haml_stack.pop().haml;
-        console.log("haml: %o => %o", haml, JSON.stringify(haml));
+        //console.log("haml: %o => %o", haml, JSON.stringify(haml));
         if(haml) {
           this.haml = this.node 
                     = $('<div/>').addClass('haml').appendTo(this.node);
@@ -227,8 +227,8 @@ Litijs = _.Class(function(selector, src, callback) {
                 return writeHtml(node, haml);
               }
               haml.trim().replace(
-                /^\s*(?:%([^.{\s]*))?(?:#([a-zA-Z0-9.-]+))?((?:\.[a-zA-Z0-9.-]+)*)?({[^}]*})?(.*)/,
-                function(match, tag, id, klass, attr, text) {
+                /^\s*(?:%([^.{\s]*))?((?:\.[a-zA-Z0-9._-]+)*)?(?:#([a-zA-Z0-9.-]+))?({[^}]*})?(.*)/,
+                function(match, tag, klass, id, attr, text) {
                   parsed = {
                     node: !!(tag || klass || id),
                     tag: tag || 'div',
@@ -240,10 +240,11 @@ Litijs = _.Class(function(selector, src, callback) {
                 }
               );
 
-              console.log('writing; %o -> %o', haml, parsed);
+              //console.log('writing; %o -> %o', haml, parsed);
 
               if(!parsed.node && parsed.text) {
-                parent.appendText(parsed.text);
+                if(parsed.text.slice(0,1) == ':') parsed.text = parsed.text.slice(1);
+                parent.appendText(parsed.text + '\n');
               } else {
                 node = $(_.evil_format('<%{tag}/>', { tag: parsed.tag }))
                    .addClass(parsed.klass)
@@ -255,8 +256,8 @@ Litijs = _.Class(function(selector, src, callback) {
             });
           };
           writeHtml(this.node, haml);
+          this.haml_example = Litijs.show_html(this.haml).insertBefore(this.node);
           this.node = this.node.parent();
-          Litijs.show_html(this.haml).appendTo(this.node);
         }
       }
     },
@@ -333,7 +334,7 @@ Litijs = _.Class(function(selector, src, callback) {
         
         this.example = this.node;
         this.node = this.node.parent();
-        if(this.example.contents().length == 0) {
+        if(!this.example_display) {
           this.example.remove();
           delete this.example;
         }
@@ -399,7 +400,7 @@ Litijs = _.Class(function(selector, src, callback) {
       haml = haml.slice(indentation);
       if(indentation < 0) { this.haml_stack.push(top); return; }
       if(indentation > top.indentation) {
-        console.log("i: %o, haml: %o\n\ttop: %o\n\tstack: %o", indentation, haml, JSON.stringify(top), JSON.stringify(this.haml_stack));
+        //console.log("i: %o, haml: %o\n\ttop: %o\n\tstack: %o", indentation, haml, JSON.stringify(top), JSON.stringify(this.haml_stack));
         var haml_node = [haml];
         top.haml.push(haml_node);
         this.haml_stack.push(top);
@@ -591,7 +592,7 @@ Litijs = _.Class(function(selector, src, callback) {
 
         return formatted.trim();
       })(text);
-      console.log(text);
+      //console.log(text);
       return $('<pre/>').text(text).addClass('prettyprint lang:html');
     }
   }

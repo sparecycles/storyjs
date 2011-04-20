@@ -29,21 +29,29 @@ body {
   width:600px;
 }
 .litijs pre {
-  background: url("../images/pre_code_bg_ylw2.gif") repeat scroll 0 0 white;
-  -moz-box-shadow: 3px 3px 3px #666;
-  -webkit-box-shadow: 3px 3px 3px #666;
-  box-shadow: 3px 3px 3px #666;
+  background: url("../images/code_bg.gif") repeat scroll 0 0 white;
+  -moz-box-shadow: 3px 3px 6px #666;
+  -webkit-box-shadow: 3px 3px 6px #666;
+  box-shadow: 3px 3px 6px #666;
   line-height: 20px;
   font-size: 14px;
-  border: none;
   margin:0;
   padding:0;
   padding-left: 30px;
   margin-right: 5px;
+  border: 1px solid black;
 }
 .litijs .wrapper pre {
+  border: none;
+  border-left: 1px solid black;
   float:right;
   width:590px;
+}
+.litijs .section .wrapper:first-child pre {
+  border-top: 1px solid black;
+}
+.litijs .section .wrapper:last-child pre {
+  border-bottom: 1px solid black;
 }
 
 .litijs .wrapper .note p{
