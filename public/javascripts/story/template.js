@@ -31,13 +31,16 @@
  >!   setup.call(context, context.haml);
  >!   ShowIt.last = context.haml.insertAfter(context.example);
  >! };
- >! jQuery.fn.updatey = function() {
- >!   var interval;
- >!   this.focus(function() {
- >!     clearInterval(interval); 
- >!     interval = setInterval(function() {$(this).change();}.bind(this), 50);
- >!   }).blur(function() { clearInterval(interval); });
- >!   return this;
+ >! jQuery.fn.updatey = function(freq) {
+ >!   return this.each(function() {
+ >!     var interval;
+ >!     $(this).focus(function() {
+ >!       if(interval) clearInterval(interval); 
+ >!       interval = setInterval(function() { 
+ >!         $(this).change(); 
+ >!       }.bind(this), freq || 50);
+ >!     }).blur(function() { clearInterval(interval); interval = 0; });
+ >!   });
  >! };
  >! Story.Plot.Define('WithStyle_', function(selector, style) {
  >!   this.selector = selector;
@@ -63,7 +66,7 @@
  >! Litijs.annotate = function(nodeid, type, thing) {
  >!   switch(type) {
  >!   case 'e': 
- >!      var animation = new Story([[Story.Delay(10), Story.WithStyle_(nodeid, {
+ >!      var animation = new Story([Story.Delay(0), [Story.Delay(10), Story.WithStyle_(nodeid, {
  >!       'border-radius': '10px',
  >!       'background-color': '#A88',
  >!       'padding' : '4px',
@@ -119,7 +122,7 @@
  >$('input', sample).change(function() {
  >  model.data('result', $(this).val()); 
  >});
- >! $('input', sample).updatey();
+ >! $('input', sample).updatey(1000);
  >!});
  >!ShowIt.last.appendTo(this.node);
  |
@@ -189,10 +192,10 @@
  | source data, and data computed in a $let or $each binding.
  |
  + %center.example
- +   show a month with
+ +   show a month with _
  +   %select.days
  +     %option
- +   days, which starts on
+ +   _ days, which starts on _
  +   %select.first-day
  +     %option
  +   %table
@@ -226,23 +229,14 @@
  >  first_day: 0,
  >  number_of_days: 30
  >});
+ >
  >sample.template(model, {
- >  '.first-day' : {
- >    'option' : { $each: { day: '.first_day_options' },
- >      '@value': 'day.value',
- >      '@text': 'day.name',
- >    },
- >    '@onchange': function() { 
- >      @e(Template.update('.first_day', $(this).val())@); 
- >    }
+ >  '.first-day option': { $each: { day: '.first_day_options' },
+ >    '@value': 'day.value',
+ >    '@text': 'day.name'
  >  },
- >  '.days': {
- >    'option' : { $each: { day: '.number_of_days_options' },
- >      '@text': 'day',
- >    },
- >    '@onchange': function() {
- >      @e(Template.update('.number_of_days', $(this).val())@);
- >    }
+ >  '.days option': { $each: { day: '.number_of_days_options' },
+ >    '@text': 'day'
  >  },
  >  'table' : {
  >    $let : { rows : function() {
@@ -256,14 +250,83 @@
  >        if(row.length == 7) { row = []; rows.push(row); }
  >        row.push(day++);
  >      }
- >      return rows; //Template.ViewModel.constant(rows);
+ >      console.log('rows...');
+ >      return @e(rows@);
  >    } },
  >    '.row' : { $each : { row: 'rows' },
  >      '.day' : { $each : { day: 'row' }, '.' : 'day' }
  >    }
+ >  },
+ >  '.first-day@onchange': function() { 
+ >    @e(Template.update('.first_day', $(this).val())@); 
+ >  },
+ >  '.days@onchange': function() {
+ >    @e(Template.update('.number_of_days', $(this).val())@);
  >  }
  >});
  >! })
+ |
+ | The next feature we have in template is the ability to compose
+ | and reuse layout.
+ |
+ + .example
+ +   %style
+ +     |.frame-r { background-color: #F88; padding: 3px; }
+ +     |.frame-g { background-color: #8F8; padding: 3px; }
+ +     |.frame-b { background-color: #88F; padding: 3px; }
+ +     |.frame-regular { border: 9px inset gray; background: gray; color: white}
+ +   .rainbow-frame-template
+ +     .frame-r
+ +       .frame-g
+ +         .frame-b
+ +           .content
+ +   .regular-frame-template
+ +     .frame-regular
+ +       .content
+ +   .frame-example
+ +     .framed
+ +       Rain
+ +     .framed
+ +       Bow
+ +     .framed-complex
+ +       Is this _
+ +       %button.word
+ +         complicated
+ +       _ or what
+ +       %span.punc ?
+ >! ShowIt(function(sample) {
+ >$('.rainbow-frame-template', sample).defineTemplate('colorful', {
+ >  '.content' : '%content'
+ >});
+ >$('.regular-frame-template', sample).defineTemplate('boring', {
+ >  '.content' : '%content'
+ >});
+ >$('.frame-example', sample).template({ complicated: true }, {
+ >  $let : { 
+ >    'framing' : Template.coalesce(function() { 
+ >      return !Template.access('.complicated') 
+ >             ? 'colorful' 
+ >             : undefined; 
+ >    }, '=boring'),
+ >  },
+ >  '.framed' : { $template: 'framing', 
+ >   '.' : { $as: 'content' }
+ >  },
+ >  '.framed-complex' : { $template: 'framing', 
+ >    '.' : { $as: 'content', 
+ >      '.word@onclick' : function() { 
+ >        Template.update('.complicated', !Template.access('.complicated'));
+ >      },
+ >      '.word@text' : function() {
+ >        return Template.access('.complicated') ? 'complicated' : 'simple';
+ >      },
+ >      '.punc@text' : function() {
+ >        return Template.access('.complicated') ? '?' : '!';
+ >      }
+ >    }
+ >  }
+ >});
+ >! });
  |
 -- API
  | 
@@ -307,7 +370,7 @@ Template = _.Class(function(self, action) {
           Template.render_context.model.save_access_scope();
           return this.action();
         } catch(ex) {
-          console.warn('error rendering: %o', ex.stack);
+          console.warn('error rendering: %o', ex.stack || ex);
         } finally {
           /// Get back the list of things that this render accessed...
           var scope = 
@@ -428,7 +491,7 @@ Template = _.Class(function(self, action) {
       var placeholder = Template.inserted($(document.createComment((name||'template') + ' placeholder')).insertAfter(node));
       Template.render_context.placeholders.push(placeholder);
       placeholder.data('node', node);
-      node.detach();
+      $(node).detach();
       return placeholder;
     },
     /// @{Template.render_or_action_context} returns 
@@ -483,7 +546,7 @@ Template = _.Class(function(self, action) {
     /// but delays on the final read.
     navigate: function(path) {
       var navi = Template.navigate_(path, Template.context());
-      if(typeof navi[0] !== 'function') {
+      if(!navi || typeof navi[0] !== 'function') {
         debugger;
       }
       return navi[0](navi[1]);
@@ -509,7 +572,11 @@ Template = _.Class(function(self, action) {
       if(!path) return undefined;
 
       if(typeof path === 'function') {
-        return [ function() { return path.call(context.render_context.self); }, null ];
+        return [ function() { 
+          return Template.ViewModel.constant(
+            path.call(context.render_context.self)
+          ); 
+        }, null ];
       }
 
       if(path === '.') {
@@ -582,8 +649,8 @@ Template = _.Class(function(self, action) {
       return (function(args) { 
         return function() { 
           for(var k in args) {
-            var navigation = Template.navigate(args[k]);
-            if(navigation && navigation() !== undefined) return navigation;
+            var result = Template.access(args[k]);
+            if(result != undefined) return result;
           }
         } 
       })(__args());
@@ -745,7 +812,7 @@ Template = _.Class(function(self, action) {
                   $partial = map.$partial;
 
               _.each.call($partial, contents_for || {}, function(value, key) {
-                var content = $(this).find(key);
+                var content = key == '.' ? $(this) : $(this).find(key);
                 content_selector = content_selector.add(
                   content.clone().data('template', {
                     map: value, 
@@ -869,6 +936,7 @@ Template = _.Class(function(self, action) {
               (key == '.' ? $(this) : $(this).find(key)).text(Template.access(value));
             });
           } else {
+            console.log('key is %o', key); if(key.slice(0,3) == '...') debugger;
             (key == '.' ? $(this) : $(this).find(key)).each(function() {
               Template(this, function() {
                 Template.context().map = Object.create(value);
@@ -1178,13 +1246,16 @@ jQuery.fn.clearTemplate = function() {
 };
 
 jQuery.fn.template = function(model, map) {
-   if(arguments.length == 1 && arguments[0] === false) {
-     return this.clearTemplate();
-   }
+  if(arguments.length == 1 && arguments[0] === false) {
+    return this.clearTemplate();
+  }
 
   if(this.length != 1) {
     console.warn('template rendering on a non-singular node!');
     debugger;
+  }
+  if(!(model instanceof Template.ViewModel)) {
+    model = new Template.ViewModel(model);
   }
   return this.each(function() {
     jQuery.template(this, model, map);

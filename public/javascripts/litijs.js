@@ -242,9 +242,16 @@ Litijs = _.Class(function(selector, src, callback) {
 
               //console.log('writing; %o -> %o', haml, parsed);
 
+              //if(parsed.text == '|') debugger;
               if(!parsed.node && parsed.text) {
-                if(parsed.text.slice(0,1) == ':') parsed.text = parsed.text.slice(1);
-                parent.appendText(parsed.text + '\n');
+                if(parsed.text.slice(0,1) == '|') {
+                  parsed.text = parsed.text.slice(1);
+                }
+                else {
+                  parsed.text = parsed.text.replace(/^_/, ' ');
+                  parsed.text = parsed.text.replace(/_$/, ' ');
+                }
+                parent.appendText(parsed.text ? parsed.text : '\n');
               } else {
                 node = $(_.evil_format('<%{tag}/>', { tag: parsed.tag }))
                    .addClass(parsed.klass)
@@ -562,37 +569,37 @@ Litijs = _.Class(function(selector, src, callback) {
       return result;
     },
     show_html: function(html) {
-      var text = html.html();
-      text = (function formatXML(xml) {
-        var formatted = '';
-        xml = xml.replace(/(>)/g, '$1\n');
-        xml = xml.replace(/(<)/g, '\n$1');
-        xml = xml.replace(/\n\n/g, '\n');
-        xml = xml.replace(/(<[^\/>]+>)\n([^<]+)\n(<\/)/g, "$1$2$3");
-        xml = xml.replace(/(<[^\/>]+)>\n<\/[^>]+>/g, "$1/>");
-        var pad = 0;
-        _.each(xml.split('\n'), function(node, index) {
-          var indent = 0;
-          if (node.match( /.+<\/\w[^>]*>$/ )) {
-            indent = 0;
-          } else if (node.match( /^<\/\w/ )) {
-            if (pad != 0) {
-              pad -= 1;
-            }
-          } else if (node.match( /^<\w[^>]*[^\/]>.*$/ )) {
-            indent = 1;
-          } else {
-            indent = 0;
-          }
-
-          var padding = new Array(pad+1).join(" ");
-          formatted += padding + node + '\r\n';
-          pad += indent;
+      text = (function parse_element(elem, dent, info) {
+        if(elem.nodeType == 3 /* Node.TEXT_NODE */) {
+          return elem.textContent.split(/[\r\n]/).join(dent);
+        }
+        else if(elem.nodeType != 1) {
+          debugger;
+          return '';
+        }
+        var tag = '<' + elem.tagName.toLowerCase() 
+          + _.map(elem.attributes, function(attr) {
+            return ' ' + attr.name + '=' + '"' + attr.value + '"';
+          }).join('') + '>';
+        var content, contents = [];
+        var end_tag = '</' + elem.tagName.toLowerCase() + '>';
+        var indent = dent + '  ';
+        _.each(elem.childNodes, function(node) {
+          var content = parse_element(node, indent, {});
+          if(content) contents.push(content);
         });
+        if(contents.length) {
+          content = contents.join(indent);
+          if(/\n/.test(content) || content.length > 30) {
+            tag = tag + indent;
+            end_tag = dent + end_tag; 
+          }
+          return tag + content + end_tag;
+        } else {
+          return tag.slice(0,-1) + '/>';
+        }
+      })(html[0], '\n', {});
 
-        return formatted.trim();
-      })(text);
-      //console.log(text);
       return $('<pre/>').text(text).addClass('prettyprint lang:html');
     }
   }
