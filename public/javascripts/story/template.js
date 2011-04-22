@@ -250,7 +250,6 @@
  >        if(row.length == 7) { row = []; rows.push(row); }
  >        row.push(day++);
  >      }
- >      console.log('rows...');
  >      return @e(rows@);
  >    } },
  >    '.row' : { $each : { row: 'rows' },
@@ -265,74 +264,120 @@
  >  }
  >});
  >! })
+ */
+
+/*
  |
  | The next feature we have in template is the ability to compose
- | and reuse layout.
+ | and reuse layout using >{defineTemplate}.
+ |
+ | A simple example of a template
+ + %style
+ +   |.simple-frame {
+ +   |  border-radius: 10px;
+ +   |  border-bottom: 3px solid #99AAFF;
+ +   |  margin-bottom: 6px;
+ +   |  padding: -3px 100px;
+ +   |  display: inline;
+ +   |}
+ + .simple-template
+ +   .simple-frame
+ +     I like _
+ +     %span.word
+ +     _ a lot!
+ | We can store this template for reuse with
+ >! ShowIt(function(sample) {
+ >$('.simple-template', sample).defineTemplate('i-like-template', {
+ >  '.word' : '...word'
+ >});
+ >! })
+ | And we can use it like this
  |
  + .example
- +   %style
- +     |.frame-r { background-color: #F88; padding: 3px; }
- +     |.frame-g { background-color: #8F8; padding: 3px; }
- +     |.frame-b { background-color: #88F; padding: 3px; }
- +     |.frame-regular { border: 9px inset gray; background: gray; color: white}
- +   .rainbow-frame-template
- +     .frame-r
- +       .frame-g
- +         .frame-b
- +           .content
- +   .regular-frame-template
- +     .frame-regular
- +       .content
- +   .frame-example
- +     .framed
- +       Rain
- +     .framed
- +       Bow
- +     .framed-complex
- +       Is this _
- +       %button.word
- +         complicated
- +       _ or what
- +       %span.punc ?
+ +   Some things I like:
+ +   %ul
+ +     %li.like
+ +       .thing
+ +
  >! ShowIt(function(sample) {
- >$('.rainbow-frame-template', sample).defineTemplate('colorful', {
- >  '.content' : '%content'
- >});
- >$('.regular-frame-template', sample).defineTemplate('boring', {
- >  '.content' : '%content'
- >});
- >$('.frame-example', sample).template({ complicated: true }, {
- >  $let : { 
- >    'framing' : Template.coalesce(function() { 
- >      return !Template.access('.complicated') 
- >             ? 'colorful' 
- >             : undefined; 
- >    }, '=boring'),
- >  },
- >  '.framed' : { $template: 'framing', 
- >   '.' : { $as: 'content' }
- >  },
- >  '.framed-complex' : { $template: 'framing', 
- >    '.' : { $as: 'content', 
- >      '.word@onclick' : function() { 
- >        Template.update('.complicated', !Template.access('.complicated'));
- >      },
- >      '.word@text' : function() {
- >        return Template.access('.complicated') ? 'complicated' : 'simple';
- >      },
- >      '.punc@text' : function() {
- >        return Template.access('.complicated') ? '?' : '!';
- >      }
+ >$('.example', sample).template({ 
+ >  things: ['turtles', 'birds', 'computers']
+ >}, {
+ >  '.like' : { $each: { thing: '.things' },
+ >    '.thing' : {
+ >      $template: '=i-like-template',
+ >      '...word' : 'thing'
  >    }
  >  }
  >});
+ >! })
+ | 
+ | The previous example shows how whole dom structures can
+ | be reused.  Sometimes a single node isn't enough for CSS to work with,
+ | right?  However this reuse only extends as far as what the
+ | template itself can render from data.  Is this a problem? You betcha.
+ |
+ | There are not one, but two ways to address this.
+ |   1. => have a template itself render a template. (exercise for you)
+ |   2. => use $as, think content_for in rails, just keep reading... 
+ |
+ | Normally, the node which is rendered with the $template rule
+ | is replaced by the template, if you specify rendering rules
+ | alongside the template, but label with with $as, 
+ | you can save them for use by the template. An example will describe this
+ | much better:
+ | 
+ + %style
+ +   |.frame-r { padding: 5px; background: red; color: white; }
+ +   |.frame-g { padding: 5px; background: green; color: white; }
+ +   |.frame-b { padding: 5px; background: blue; color: white; }
+ + .rainbow-frame-template
+ +   .frame-r
+ +     .content
+ +     .frame-g
+ +       .content
+ +       .frame-b
+ +         .content
+ + %p
+ +   %button.do-template Template
+ +   %button.clear-template Clear
+ + .example
+ +   .rainbow
+ +     .outer
+ +       Some content for the_
+ +       %b{"style":"color:pink"} red
+ +       _frame
+ +     .middle
+ +       Some content for the_
+ +       %b{"style":"color:lightgreen"} green
+ +       _frame
+ +     .inner
+ +       Some content for the_
+ +       %b{"style":"color:lightblue"} blue
+ +       _frame
+ +     .
+ >! ShowIt(function(sample) {
+ >$('.rainbow-frame-template', sample).defineTemplate('rainbow-frame', {
+ >  '.frame-r>.content' : '%outer-content',
+ >  '.frame-g>.content' : '%middle-content',
+ >  '.frame-b>.content' : '%inner-content'
+ >});
+ >$('.do-template', sample).click(function() { 
+ >  $('.example', sample).template({}, {
+ >    '.rainbow' : { $template : '=rainbow-frame',
+ >      '.inner' : { $as: 'inner-content' },
+ >      '.middle' : { $as: 'middle-content' },
+ >      '.outer' : { $as: 'outer-content' }
+ >    }
+ >  });
+ >});
+ >$('.clear-template', sample).click(function() { 
+ >  $('.example', sample).clearTemplate();
+ >});
  >! });
  |
--- API
- | 
--! @{Template.access:doc|Template.access}
- |
 -! Template
+ | Actually showing the code now.
  */
 /// Template creates a node in the tree of renders.
 Template = _.Class(function(self, action) {
@@ -936,7 +981,6 @@ Template = _.Class(function(self, action) {
               (key == '.' ? $(this) : $(this).find(key)).text(Template.access(value));
             });
           } else {
-            console.log('key is %o', key); if(key.slice(0,3) == '...') debugger;
             (key == '.' ? $(this) : $(this).find(key)).each(function() {
               Template(this, function() {
                 Template.context().map = Object.create(value);
@@ -1251,7 +1295,7 @@ jQuery.fn.template = function(model, map) {
   }
 
   if(this.length != 1) {
-    console.warn('template rendering on a non-singular node!');
+    console.warn('template rendering on a non-singular node! %o', this.selector);
     debugger;
   }
   if(!(model instanceof Template.ViewModel)) {
