@@ -379,8 +379,9 @@
 -! Template
  | Actually showing the code now.
  */
+
 /// Template creates a node in the tree of renders.
-Template = _.Class(function(self, action) {
+var Template = _.Class(function(self, action) {
   var args = __args();
 
   this.destructors = [];
@@ -1258,76 +1259,83 @@ Template = _.Class(function(self, action) {
   }
 });
 
-jQuery.fn.defineTemplate = function(name, map) {
-  var src = this.detach();
-  if(this.length != 1) {
-    console.warn('Bad defineTemplate("' + name + '"), selector.length != 1');
-    debugger;
-  }
-  //src.attr('id', null); // clear id attribute, probably the selector.
-  Template.definedTemplates[name] = function() {
-    var parent = Object.create(Template.context());
-    Template(this, function() {
-      Template.context().parent = parent;
-      Template.context().map = Object.create(map);
-      var clone = Template.inserted(src.clone().insertAfter(this));
+Template.bind_to_jQuery = function() {
+  if(require) try { require('./jquery-1.5-hack'); } catch(ex) {}
 
-      Template.render.call(clone);
+  jQuery.fn.defineTemplate = function(name, map) {
+    var src = this.detach();
+    if(this.length != 1) {
+      console.warn('Bad defineTemplate("' + name + '"), selector.length != 1');
+      debugger;
+    }
+    //src.attr('id', null); // clear id attribute, probably the selector.
+    Template.definedTemplates[name] = function() {
+      var parent = Object.create(Template.context());
+      Template(this, function() {
+        Template.context().parent = parent;
+        Template.context().map = Object.create(map);
+        var clone = Template.inserted(src.clone().insertAfter(this));
 
-      if(parent.map.$setup) {
-        parent.map.$setup.call(clone);
-      }
+        Template.render.call(clone);
 
-      Template.remove(this, 'template(' + name + ')');
+        if(parent.map.$setup) {
+          parent.map.$setup.call(clone);
+        }
+
+        Template.remove(this, 'template(' + name + ')');
+      });
+    }
+  };
+
+  jQuery.fn.clearTemplate = function() {
+    return this.each(function() {
+      jQuery.clearTemplate(this);
     });
-  }
-};
+  };
 
-jQuery.fn.clearTemplate = function() {
-  return this.each(function() {
-    jQuery.clearTemplate(this);
-  });
-};
+  jQuery.fn.template = function(model, map) {
+    if(arguments.length == 1 && arguments[0] === false) {
+      return this.clearTemplate();
+    }
 
-jQuery.fn.template = function(model, map) {
-  if(arguments.length == 1 && arguments[0] === false) {
-    return this.clearTemplate();
-  }
-
-  if(this.length != 1) {
-    console.warn('template rendering on a non-singular node! %o', this.selector);
-    debugger;
-  }
-  if(!(model instanceof Template.ViewModel)) {
-    model = new Template.ViewModel(model);
-  }
-  return this.each(function() {
-    jQuery.template(this, model, map);
-  });
-};
-
-jQuery.clearTemplate = function(elem) {
-  var data = $(elem).data();
-  var template_context = data.template_context;
-  if(template_context) {
-    template_context.clear();
-    delete data.template_context;
-  }
-};
-
-jQuery.template = function(node, model, map) {
-  var $node = $(node);
-  var old_context = $node.data('template_context');
-  if(old_context) { old_context.clear(); }
-  var root_context = 
-    new Template.RootRenderContext(model, _.deepfreeze(map || {}))
-  $node.data('template_context', root_context);
-  _.local.call(Template, { render_context: root_context }, function() {
-    Template(node, function() {
-      Template.render.call(this);
+    if(this.length != 1) {
+      console.warn('template rendering on a non-singular node! %o', this.selector);
+      debugger;
+    }
+    if(!(model instanceof Template.ViewModel)) {
+      model = new Template.ViewModel(model);
+    }
+    return this.each(function() {
+      jQuery.template(this, model, map);
     });
-  }).call(this);
+  };
+
+  jQuery.clearTemplate = function(elem) {
+    var data = $(elem).data();
+    var template_context = data.template_context;
+    if(template_context) {
+      template_context.clear();
+      delete data.template_context;
+    }
+  };
+
+  jQuery.template = function(node, model, map) {
+    var $node = $(node);
+    var old_context = $node.data('template_context');
+    if(old_context) { old_context.clear(); }
+    var root_context = 
+      new Template.RootRenderContext(model, _.deepfreeze(map || {}))
+    $node.data('template_context', root_context);
+    _.local.call(Template, { render_context: root_context }, function() {
+      Template(node, function() {
+        Template.render.call(this);
+      });
+    }).call(this);
+  };
 };
 
+if(jQuery) Template.bind_to_jQuery();
+
+var exports; if(exports) exports.Template = Template;
 
 // vim: set sw=2 ts=2 expandtab :

@@ -316,7 +316,7 @@
  */
  
 /// A story's root node is a compound...
-Story = _.Class(function() {
+var Story = _.Class(function() {
   this.plot = Story.Compound.apply(null, __args());
 }, {
   proto: {
@@ -701,11 +701,11 @@ Story.Plot.Define('Sequence', function() {
   this.steps = [];
   this.index = -1;
   var args = __args();
-  _.each.call(this, args, function(device) {
+  _.each.call(this, args, function(plot) {
     if(plot instanceof Array) {
       plot = Story.Plot.Build(["#Compound"].concat(plot));
     }
-    this.steps.push(Story.Plot.Register(this, device));
+    this.steps.push(Story.Plot.Register(this, plot));
   });
 }, {
   /// @{Story.Sequence.setup|setup} selects the first child.
@@ -795,6 +795,7 @@ Story.Plot.Define('Compound', function() {
   }
 });
 
+var exports; if(exports) exports.Story = Story;
 
 /**
 -- License

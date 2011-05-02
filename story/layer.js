@@ -1,4 +1,5 @@
-_ = _layer = {};
+var _ = {};
+var exports; if(exports) _ = exports;
 
 var TESTING = false;
 // Just in case
@@ -71,10 +72,10 @@ if(!Object.hasOwnProperty.call((function() {return this;})(), 'console')) {
 // Extends javascript with something nice.
 // __args() evaluates to the Array of arguments passed to a function
 // after the named args.
-function __args() { 
+__args = _._args = function __args() { 
   var caller = __args.caller;
   return Array.prototype.slice.call(caller.arguments, caller.length); 
-}
+};
 
 _.is_object = function(thing) {
   return typeof thing === 'object' && thing instanceof Object;
