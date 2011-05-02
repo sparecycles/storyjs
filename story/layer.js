@@ -52,7 +52,7 @@ if(!Function.prototype.bind || TESTING) {
   };
 }
 
-if(!Object.hasOwnProperty.call(window, 'console')) {
+if(!Object.hasOwnProperty.call((function() {return this;})(), 'console')) {
   console = {
     log: function() {},
     warn: function() {},

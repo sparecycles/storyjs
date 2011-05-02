@@ -702,8 +702,8 @@ Story.Plot.Define('Sequence', function() {
   this.index = -1;
   var args = __args();
   _.each.call(this, args, function(device) {
-    if(device instanceof Array) {
-      device = Story.Plot.Build(["#Compound"].concat(device));
+    if(plot instanceof Array) {
+      plot = Story.Plot.Build(["#Compound"].concat(plot));
     }
     this.steps.push(Story.Plot.Register(this, device));
   });
