@@ -6,7 +6,6 @@
  | Coming Soon!
  */
 
-
 /*
 -- Story.Loop
  | A Loop plot node executes its

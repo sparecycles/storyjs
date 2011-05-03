@@ -314,7 +314,9 @@
  | 
  | Actually showing the code now.
  */
- 
+
+var _; if(!_ && require) _ = require("./layer");
+
 /// A story's root node is a compound...
 var Story = _.Class(function() {
   this.plot = Story.Compound.apply(null, __args());
@@ -372,8 +374,16 @@ var Story = _.Class(function() {
       var node = Story.find(name);
       return node ? node.scope : Story.Tale.context.tale.scope;
     },
-    /// @{Story.read} reads a key (or "key@scope") from the scope.
+    wire: function(key, value) {
+      var wire = Story.Tale.context.wire;
+      if(arguments.length == 0 || !key || key == ".") return wire;
+      wire[key] = wire[key] || [];
+      if(arguments.length > 1) {
+        wire[key].push(value);
+      } else return wire[key].shift();
+    },
     read: function(key) {
+      if(key.charAt(0) == "#") return Story.wire(key.slice(1));
       var scope = '.';
       /// Split off the scope from the key if there's a scope
       var at_index = key.indexOf('@');
@@ -387,6 +397,7 @@ var Story = _.Class(function() {
     },
     /// @{Story.write} writes a value to key (or "key@scope") to the scope.
     write: function(key, value) {
+      if(key.charAt(0) == "#") return Story.wire(key.slice(1), value);
       var scope = '.';
       /// Split off the scope from the key if there's a scope
       var at_index = key.indexOf('@');
@@ -587,7 +598,7 @@ var Story = _.Class(function() {
           if(!this.device) return false;
 
           var result = Story.Tale.Context(
-            this.device, this
+            this.device, this, {}
           ).run('update');
 
           if(!result) this.stop();
@@ -597,7 +608,7 @@ var Story = _.Class(function() {
         handle: function(arg) {
           if(this.device) {
             return Story.Tale.Context(
-              this.device, this
+              this.device, this, {}
             ).run('handle', arg);
           }
         },
@@ -625,6 +636,7 @@ var Story = _.Class(function() {
         Context: _.Class(function(device, tale) {
           this.device = device || Story.Tale.context.device;
           this.tale = tale || Story.Tale.context.tale;
+          this.wire = Story.Tale.context ? Story.Tale.context.wire : {};
         }, {
           proto: {
             /// Context().run(function() { ... }) 

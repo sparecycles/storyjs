@@ -1259,6 +1259,8 @@ var Template = _.Class(function(self, action) {
   }
 });
 
+var require;
+
 Template.bind_to_jQuery = function() {
   if(require) try { require('./jquery-1.5-hack'); } catch(ex) {}
 
